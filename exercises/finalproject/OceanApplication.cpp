@@ -35,10 +35,8 @@ void OceanApplication::Initialize()
 
 	// Build textures and keep them in a list
 	InitializeTextures();
-
 	// Build materials and keep them in a list
 	InitializeMaterials();
-
 	// Build meshes and keep them in a list
 	InitializeMeshes();
 
@@ -340,21 +338,27 @@ void OceanApplication::UpdateCamera()
 
 	glm::mat4 viewTransposedMatrix = glm::transpose(m_camera.GetViewMatrix());
 	glm::vec3 viewRight = viewTransposedMatrix[0];
+	glm::vec3 viewUp = viewTransposedMatrix[1];
 	glm::vec3 viewForward = -viewTransposedMatrix[2];
 
 	// Update camera translation
 	{
-		glm::vec2 inputTranslation(0.0f);
+		glm::vec3 inputTranslation(0.0f);
 
 		if (window.IsKeyPressed(GLFW_KEY_A))
 			inputTranslation.x = -1.0f;
 		else if (window.IsKeyPressed(GLFW_KEY_D))
 			inputTranslation.x = 1.0f;
 
-		if (window.IsKeyPressed(GLFW_KEY_W))
+		if (window.IsKeyPressed(GLFW_KEY_E))
 			inputTranslation.y = 1.0f;
-		else if (window.IsKeyPressed(GLFW_KEY_S))
+		else if (window.IsKeyPressed(GLFW_KEY_Q))
 			inputTranslation.y = -1.0f;
+
+		if (window.IsKeyPressed(GLFW_KEY_W))
+			inputTranslation.z = 1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_S))
+			inputTranslation.z = -1.0f;
 
 		inputTranslation *= m_cameraTranslationSpeed;
 		inputTranslation *= GetDeltaTime();
@@ -363,7 +367,7 @@ void OceanApplication::UpdateCamera()
 		if (window.IsKeyPressed(GLFW_KEY_LEFT_SHIFT))
 			inputTranslation *= 2.0f;
 
-		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewForward;
+		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewUp + inputTranslation.z * viewForward;
 	}
 
 	// Update camera rotation
