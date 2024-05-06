@@ -6,6 +6,7 @@
 #include <ituGL/geometry/Mesh.h>
 #include <ituGL/camera/Camera.h>
 #include <ituGL/shader/Material.h>
+#include <ituGL/utils/DearImGui.h>
 #include <glm/mat4x4.hpp>
 #include <vector>
 
@@ -20,6 +21,7 @@ protected:
     void Initialize() override;
     void Update() override;
     void Render() override;
+    void Cleanup() override;
 
 private:
     void InitializeTextures();
@@ -28,6 +30,8 @@ private:
     void InitializeCamera();
 
     void UpdateCamera();
+
+    void RenderGUI();
 
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
 
@@ -71,4 +75,7 @@ private:
     std::shared_ptr<Texture2DObject> m_rockTexture;
     std::shared_ptr<Texture2DObject> m_snowTexture;
     std::shared_ptr<Texture2DObject> m_waterTexture;
+
+    // GUI
+    DearImGui m_imGui;
 };

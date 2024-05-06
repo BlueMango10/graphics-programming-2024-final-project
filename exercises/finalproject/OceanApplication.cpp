@@ -14,6 +14,7 @@
 #include <cmath>
 #include <iostream>
 #include <numbers> // for PI constant
+#include <imgui.h>
 
 OceanApplication::OceanApplication()
 	: Application(1024, 1024, "Ocean demo")
@@ -33,6 +34,9 @@ void OceanApplication::Initialize()
 {
 	Application::Initialize();
 
+	// Initialize DearImGUI
+	m_imGui.Initialize(GetMainWindow());
+
 	// Build textures and keep them in a list
 	InitializeTextures();
 	// Build materials and keep them in a list
@@ -40,7 +44,7 @@ void OceanApplication::Initialize()
 	// Build meshes and keep them in a list
 	InitializeMeshes();
 
-
+	// Initialize Camera
 	InitializeCamera();
 
 	// Enable depth test
@@ -75,6 +79,17 @@ void OceanApplication::Render()
 	DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
+
+	// Render the debug user interface
+	RenderGUI();
+}
+
+void OceanApplication::Cleanup()
+{
+	// Cleanup DearImGUI
+	m_imGui.Cleanup();
+
+	Application::Cleanup();
 }
 
 void OceanApplication::InitializeTextures()
@@ -385,4 +400,22 @@ void OceanApplication::UpdateCamera()
 
 	// Update view matrix
 	m_camera.SetViewMatrix(m_cameraPosition, m_cameraPosition + viewForward);
+}
+
+void OceanApplication::RenderGUI()
+{
+	m_imGui.BeginFrame();
+
+	// Camera
+
+	bool open = true;
+	bool closed = false;
+	ImGui::Begin("Camera", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::DragFloat("Translation Speed", &m_cameraTranslationSpeed);
+	ImGui::DragFloat("Rotation Speed", &m_cameraRotationSpeed);
+	ImGui::Separator();
+	ImGui::Text(m_cameraEnabled ? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse" : "Press SPACE to enable camera movement");
+	ImGui::End();
+
+	m_imGui.EndFrame();
 }
