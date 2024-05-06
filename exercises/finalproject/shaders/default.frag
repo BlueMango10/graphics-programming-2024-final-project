@@ -1,26 +1,14 @@
-//Inputs
-in vec3 ViewNormal;
-in vec3 ViewTangent;
-in vec3 ViewBitangent;
+#version 330 core
+
+in vec3 WorldPosition;
+in vec3 WorldNormal;
 in vec2 TexCoord;
 
-//Outputs
-out vec4 FragAlbedo;
-out vec2 FragNormal;
-out vec4 FragOthers;
+out vec4 FragColor;
 
-//Uniforms
-uniform vec3 Color;
-uniform sampler2D ColorTexture;
-uniform sampler2D NormalTexture;
-uniform sampler2D SpecularTexture;
+uniform vec4 Color;
 
 void main()
 {
-	FragAlbedo = vec4(Color.rgb * texture(ColorTexture, TexCoord).rgb, 1);
-
-	vec3 viewNormal = SampleNormalMap(NormalTexture, TexCoord, normalize(ViewNormal), normalize(ViewTangent), normalize(ViewBitangent));
-	FragNormal = viewNormal.xy;
-
-	FragOthers = texture(SpecularTexture, TexCoord);
+	FragColor = Color;
 }

@@ -1,5 +1,5 @@
 
-set(libraries glad glfw assimp imgui itugl ${APPLE_LIBRARIES})
+set(libraries glad glfw itugl ${APPLE_LIBRARIES})
 
 file(GLOB_RECURSE target_inc "*.h" )
 file(GLOB_RECURSE target_src "*.cpp" )
@@ -18,10 +18,10 @@ add_custom_target(${TARGETNAME}-shaders ALL
 )
 add_dependencies(${TARGETNAME} ${TARGETNAME}-shaders)
 
-# Copy models folder to build folder
-add_custom_target(${TARGETNAME}-models ALL
+# Copy textures folder to build folder
+add_custom_target(${TARGETNAME}-textures ALL
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
-	${CMAKE_CURRENT_SOURCE_DIR}/models
-	${CMAKE_CURRENT_BINARY_DIR}/models
+	${CMAKE_CURRENT_SOURCE_DIR}/textures
+	${CMAKE_CURRENT_BINARY_DIR}/textures
 )
-add_dependencies(${TARGETNAME} ${TARGETNAME}-models)
+add_dependencies(${TARGETNAME} ${TARGETNAME}-textures)

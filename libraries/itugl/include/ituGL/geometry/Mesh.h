@@ -109,7 +109,7 @@ public:
     inline unsigned int GetVertexArrayCount() const { return static_cast<unsigned int>(m_vaos.size()); }
     inline const VertexArrayObject& GetVertexArray(unsigned int vaoIndex) const { return m_vaos[vaoIndex]; }
 
-    inline unsigned int GetSubmeshCount() const { return static_cast<unsigned int>(m_submeshes.size()); }
+    inline unsigned int GetSubmeshCount() const { return 1; return static_cast<unsigned int>(m_submeshes.size()); }
     inline const VertexArrayObject& GetSubmeshVertexArray(unsigned int submeshIndex) const { return m_vaos[m_submeshes[submeshIndex].vaoIndex]; }
     inline const Drawcall& GetSubmeshDrawcall(unsigned int submeshIndex) const { return m_submeshes[submeshIndex].drawcall; }
 

@@ -9,3 +9,19 @@ source_group("Shaders" FILES ${shaders})
 
 add_executable(${TARGETNAME} ${target_inc} ${target_src} ${shaders})
 target_link_libraries(${TARGETNAME} ${libraries})
+
+# Copy shaders folder to build folder
+add_custom_target(${TARGETNAME}-shaders ALL
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_CURRENT_SOURCE_DIR}/shaders
+	${CMAKE_CURRENT_BINARY_DIR}/shaders
+)
+add_dependencies(${TARGETNAME} ${TARGETNAME}-shaders)
+
+# Copy textures folder to build folder
+add_custom_target(${TARGETNAME}-textures ALL
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	${CMAKE_CURRENT_SOURCE_DIR}/textures
+	${CMAKE_CURRENT_BINARY_DIR}/textures
+)
+add_dependencies(${TARGETNAME} ${TARGETNAME}-textures)
