@@ -42,6 +42,9 @@ void OceanApplication::Initialize()
 	// Build meshes and keep them in a list
 	InitializeMeshes();
 
+
+	InitializeCamera();
+
 	// Enable depth test
 	GetDevice().EnableFeature(GL_DEPTH_TEST);
 
@@ -53,15 +56,7 @@ void OceanApplication::Update()
 {
 	Application::Update();
 
-	const Window& window = GetMainWindow();
-
-	glm::vec2 mousePosition = window.GetMousePosition(true);
-	m_camera.SetViewMatrix(glm::vec3(0.0f, 15.0f, 15.0f), glm::vec3(mousePosition, 0.0f));
-
-	int width, height;
-	window.GetDimensions(width, height);
-	float aspectRatio = static_cast<float>(width) / height;
-	m_camera.SetPerspectiveProjectionMatrix(1.0, aspectRatio, 0.1f, 100.0f);
+	UpdateCamera();
 }
 
 void OceanApplication::Render()
@@ -311,4 +306,79 @@ void OceanApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigne
 
 	mesh.AddSubmesh<Vertex, unsigned int, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, indices,
 		vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
+}
+
+void OceanApplication::InitializeCamera()
+{
+	// Set view matrix, from the camera position looking to the origin
+	m_camera.SetViewMatrix(m_cameraPosition, glm::vec3(0.0f));
+
+	// Set perspective matrix
+	float aspectRatio = GetMainWindow().GetAspectRatio();
+	m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 1000.0f);
+}
+
+void OceanApplication::UpdateCamera()
+{
+	Window& window = GetMainWindow();
+
+	// Update if camera is enabled (controlled by SPACE key)
+	{
+		bool enablePressed = window.IsKeyPressed(GLFW_KEY_SPACE);
+		if (enablePressed && !m_cameraEnablePressed)
+		{
+			m_cameraEnabled = !m_cameraEnabled;
+
+			window.SetMouseVisible(!m_cameraEnabled);
+			m_mousePosition = window.GetMousePosition(true);
+		}
+		m_cameraEnablePressed = enablePressed;
+	}
+
+	if (!m_cameraEnabled)
+		return;
+
+	glm::mat4 viewTransposedMatrix = glm::transpose(m_camera.GetViewMatrix());
+	glm::vec3 viewRight = viewTransposedMatrix[0];
+	glm::vec3 viewForward = -viewTransposedMatrix[2];
+
+	// Update camera translation
+	{
+		glm::vec2 inputTranslation(0.0f);
+
+		if (window.IsKeyPressed(GLFW_KEY_A))
+			inputTranslation.x = -1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_D))
+			inputTranslation.x = 1.0f;
+
+		if (window.IsKeyPressed(GLFW_KEY_W))
+			inputTranslation.y = 1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_S))
+			inputTranslation.y = -1.0f;
+
+		inputTranslation *= m_cameraTranslationSpeed;
+		inputTranslation *= GetDeltaTime();
+
+		// Double speed if SHIFT is pressed
+		if (window.IsKeyPressed(GLFW_KEY_LEFT_SHIFT))
+			inputTranslation *= 2.0f;
+
+		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewForward;
+	}
+
+	// Update camera rotation
+	{
+		glm::vec2 mousePosition = window.GetMousePosition(true);
+		glm::vec2 deltaMousePosition = mousePosition - m_mousePosition;
+		m_mousePosition = mousePosition;
+
+		glm::vec3 inputRotation(-deltaMousePosition.x, deltaMousePosition.y, 0.0f);
+
+		inputRotation *= m_cameraRotationSpeed;
+
+		viewForward = glm::rotate(inputRotation.x, glm::vec3(0, 1, 0)) * glm::rotate(inputRotation.y, glm::vec3(viewRight)) * glm::vec4(viewForward, 0);
+	}
+
+	// Update view matrix
+	m_camera.SetViewMatrix(m_cameraPosition, m_cameraPosition + viewForward);
 }

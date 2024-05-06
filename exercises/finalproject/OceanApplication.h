@@ -25,6 +25,9 @@ private:
     void InitializeTextures();
     void InitializeMaterials();
     void InitializeMeshes();
+    void InitializeCamera();
+
+    void UpdateCamera();
 
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
 
