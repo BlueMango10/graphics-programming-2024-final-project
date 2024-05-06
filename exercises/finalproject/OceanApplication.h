@@ -25,6 +25,9 @@ private:
     void InitializeTextures();
     void InitializeMaterials();
     void InitializeMeshes();
+    void InitializeCamera();
+
+    void UpdateCamera();
 
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
 
@@ -37,7 +40,14 @@ private:
 private:
     unsigned int m_gridX, m_gridY;
 
+    // Camera controller parameters
     Camera m_camera;
+    glm::vec3 m_cameraPosition;
+    float m_cameraTranslationSpeed;
+    float m_cameraRotationSpeed;
+    bool m_cameraEnabled;
+    bool m_cameraEnablePressed;
+    glm::vec2 m_mousePosition;
 
     ShaderLoader m_vertexShaderLoader;
     ShaderLoader m_fragmentShaderLoader;
