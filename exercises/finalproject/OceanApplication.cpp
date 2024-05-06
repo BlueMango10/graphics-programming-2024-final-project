@@ -20,6 +20,12 @@ OceanApplication::OceanApplication()
 	, m_gridX(128), m_gridY(128)
 	, m_vertexShaderLoader(Shader::Type::VertexShader)
 	, m_fragmentShaderLoader(Shader::Type::FragmentShader)
+	, m_cameraPosition(0, 30, 30)
+	, m_cameraTranslationSpeed(20.0f)
+	, m_cameraRotationSpeed(0.5f)
+	, m_cameraEnabled(false)
+	, m_cameraEnablePressed(false)
+	, m_mousePosition(GetMainWindow().GetMousePosition(true))
 {
 }
 

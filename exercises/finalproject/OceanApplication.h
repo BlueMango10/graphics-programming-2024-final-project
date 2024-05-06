@@ -37,7 +37,14 @@ private:
 private:
     unsigned int m_gridX, m_gridY;
 
+    // Camera controller parameters
     Camera m_camera;
+    glm::vec3 m_cameraPosition;
+    float m_cameraTranslationSpeed;
+    float m_cameraRotationSpeed;
+    bool m_cameraEnabled;
+    bool m_cameraEnablePressed;
+    glm::vec2 m_mousePosition;
 
     ShaderLoader m_vertexShaderLoader;
     ShaderLoader m_fragmentShaderLoader;
