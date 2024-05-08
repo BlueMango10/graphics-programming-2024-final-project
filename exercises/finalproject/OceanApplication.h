@@ -82,6 +82,9 @@ private:
     std::shared_ptr<Texture2DObject> m_snowTexture;
     std::shared_ptr<Texture2DObject> m_waterTexture;
 
-    // GUI
+    // GUI and misc adjustable parameters
     DearImGui m_imGui;
+    glm::vec4 m_terrainBounds;
+    float m_terrainHeightScale;
+    float m_terrainHeightOffset;
 };

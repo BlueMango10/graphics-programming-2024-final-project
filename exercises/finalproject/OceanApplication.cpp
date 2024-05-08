@@ -19,14 +19,20 @@
 OceanApplication::OceanApplication()
 	: Application(1024, 1024, "Ocean demo")
 	, m_gridX(128), m_gridY(128)
+	// Shader loaders
 	, m_vertexShaderLoader(Shader::Type::VertexShader)
 	, m_fragmentShaderLoader(Shader::Type::FragmentShader)
+	// Camera
 	, m_cameraPosition(0, 30, 30)
 	, m_cameraTranslationSpeed(20.0f)
 	, m_cameraRotationSpeed(0.5f)
 	, m_cameraEnabled(false)
 	, m_cameraEnablePressed(false)
 	, m_mousePosition(GetMainWindow().GetMousePosition(true))
+	// Misc adjustable parameters
+	, m_terrainBounds(glm::vec4(-1.0f, -1.0f, 1.0f, 1.0f))
+	, m_terrainHeightScale(1.0f)
+	, m_terrainHeightOffset(0.0f)
 {
 }
 
@@ -138,6 +144,7 @@ void OceanApplication::InitializeMaterials()
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
 	m_terrainMaterial->SetUniformValue("Color", glm::vec4(1.0f));
+	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture01);
 
 	// Terrain materials
 	//m_terrainMaterial00 = std::make_shared<Material>(terrainShaderProgram);
@@ -416,15 +423,23 @@ void OceanApplication::RenderGUI()
 {
 	m_imGui.BeginFrame();
 
-	// Camera
-
 	bool open = true;
 	bool closed = false;
+
+	// Camera
 	ImGui::Begin("Camera", &open, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::DragFloat("Translation Speed", &m_cameraTranslationSpeed);
 	ImGui::DragFloat("Rotation Speed", &m_cameraRotationSpeed);
 	ImGui::Separator();
 	ImGui::Text(m_cameraEnabled ? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse" : "Press SPACE to enable camera movement");
+	ImGui::End();
+	// Terrain
+	ImGui::Begin("Terrain", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::DragFloat4("Bounds", &m_terrainBounds[0]);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("x: min x coord\ny: min y coord\nz: max x coord\nw: max z coord");
+	ImGui::DragFloat("Height Scale", &m_terrainHeightScale);
+	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset);
 	ImGui::End();
 
 	m_imGui.EndFrame();

@@ -7,8 +7,9 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 uniform vec4 Color;
+uniform sampler2D Heightmap;
 
 void main()
 {
-	FragColor = Color;
+	FragColor = texture(Heightmap, WorldPosition.xz);
 }
