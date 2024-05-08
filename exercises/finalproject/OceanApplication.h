@@ -30,6 +30,7 @@ private:
     void InitializeCamera();
 
     void UpdateCamera();
+    void UpdateUniforms();
 
     void RenderGUI();
 
@@ -37,7 +38,7 @@ private:
 
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
     std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
-    std::shared_ptr<Texture2DObject> LoadTexture(const char* path);
+    std::shared_ptr<Texture2DObject> LoadTexture(const char* path, GLenum wrapMode = GL_REPEAT);
 
     void CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY);
 
@@ -62,11 +63,11 @@ private:
 
     // Materials
     std::shared_ptr<Material> m_defaultMaterial;
-    std::shared_ptr<Material> m_terrainMaterial00;
-    std::shared_ptr<Material> m_terrainMaterial10;
-    std::shared_ptr<Material> m_terrainMaterial01;
-    std::shared_ptr<Material> m_terrainMaterial11;
-    std::shared_ptr<Material> m_waterMaterial;
+    //std::shared_ptr<Material> m_terrainMaterial00;
+    //std::shared_ptr<Material> m_terrainMaterial10;
+    //std::shared_ptr<Material> m_terrainMaterial01;
+    //std::shared_ptr<Material> m_terrainMaterial11;
+    //std::shared_ptr<Material> m_waterMaterial;
 
     std::shared_ptr<Material> m_terrainMaterial;
 
@@ -83,9 +84,22 @@ private:
     //std::shared_ptr<Texture2DObject> m_waterTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture;
 
+
     // GUI and misc adjustable parameters
     DearImGui m_imGui;
+
+    // Terrain
+    // positioning
     glm::vec4 m_terrainBounds;
     float m_terrainHeightScale;
     float m_terrainHeightOffset;
+    // surface
+    glm::vec4 m_terrainColor;
+    float m_terrainSpecularExponent;
+    
+    // Light
+    glm::vec3 m_lightAmbientColor;
+    glm::vec3 m_lightColor;
+    glm::vec3 m_lightPosition;
+    float m_lightIntensity;
 };

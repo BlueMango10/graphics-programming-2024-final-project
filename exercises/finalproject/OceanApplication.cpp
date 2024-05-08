@@ -29,10 +29,18 @@ OceanApplication::OceanApplication()
 	, m_cameraEnabled(false)
 	, m_cameraEnablePressed(false)
 	, m_mousePosition(GetMainWindow().GetMousePosition(true))
-	// Misc adjustable parameters
-	, m_terrainBounds(glm::vec4(-1.0f, -1.0f, 1.0f, 1.0f))
+	// Adjustable values
+	// Terrain
+	, m_terrainBounds(glm::vec4(-10.0f, -10.0f, 10.0f, 10.0f))
 	, m_terrainHeightScale(1.0f)
 	, m_terrainHeightOffset(0.0f)
+	, m_terrainColor(glm::vec4(1.0f))
+	, m_terrainSpecularExponent(100.0f)
+	// Light
+	, m_lightAmbientColor(0.0f)
+	, m_lightColor(1.0f)
+	, m_lightIntensity(1.0f)
+	, m_lightPosition(0.0f)
 {
 }
 
@@ -55,6 +63,7 @@ void OceanApplication::Initialize()
 
 	// Enable depth test
 	GetDevice().EnableFeature(GL_DEPTH_TEST);
+	GetDevice().EnableFeature(GL_CULL_FACE);
 
 	// Enable wireframe
 	//GetDevice().SetWireframeEnabled(true);
@@ -65,6 +74,8 @@ void OceanApplication::Update()
 	Application::Update();
 
 	UpdateCamera();
+
+	UpdateUniforms();
 }
 
 void OceanApplication::Render()
@@ -107,7 +118,7 @@ void OceanApplication::InitializeTextures()
     //m_grassTexture = LoadTexture("textures/grass.jpg");
     //m_rockTexture = LoadTexture("textures/rock.jpg");
     //m_snowTexture = LoadTexture("textures/snow.jpg");
-	m_heightmapTexture = LoadTexture("textures/heightmap.png");
+	m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
 
 	//m_heightmapTexture00 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, 0));
 	//m_heightmapTexture10 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, 0));
@@ -145,7 +156,7 @@ void OceanApplication::InitializeMaterials()
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
 	m_terrainMaterial->SetUniformValue("Color", glm::vec4(1.0f));
-	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	UpdateUniforms();
 
 	// Terrain materials
 	//m_terrainMaterial00 = std::make_shared<Material>(terrainShaderProgram);
@@ -189,6 +200,16 @@ void OceanApplication::InitializeMeshes()
 	CreateTerrainMesh(m_terrainPatch, m_gridX, m_gridY);
 }
 
+void OceanApplication::UpdateUniforms()
+{
+	// Terrain
+	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	m_terrainMaterial->SetUniformValue("HeightmapBounds", m_terrainBounds);
+	m_terrainMaterial->SetUniformValue("HeightScale", m_terrainHeightScale);
+	m_terrainMaterial->SetUniformValue("HeightOffset", m_terrainHeightOffset);
+	m_terrainMaterial->SetUniformValue("Color", m_terrainColor);
+}
+
 std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
 {
 	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
@@ -214,7 +235,7 @@ std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
 	return texture;
 }
 
-std::shared_ptr<Texture2DObject> OceanApplication::LoadTexture(const char* path)
+std::shared_ptr<Texture2DObject> OceanApplication::LoadTexture(const char* path, GLenum wrapMode)
 {
 	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
 	int width = 0;
@@ -226,6 +247,10 @@ std::shared_ptr<Texture2DObject> OceanApplication::LoadTexture(const char* path)
 
 	texture->Bind();
 	texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+	texture->SetParameter(TextureObject::ParameterEnum::WrapS, wrapMode);
+	texture->SetParameter(TextureObject::ParameterEnum::WrapT, wrapMode);
+	texture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
+	texture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
 
 	// Generate mipmaps
 	texture->GenerateMipmap();
@@ -324,8 +349,8 @@ void OceanApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigne
 
 				//Triangle 1
 				indices.push_back(bottom_left);
-				indices.push_back(bottom_right);
 				indices.push_back(top_left);
+				indices.push_back(bottom_right);
 
 				//Triangle 2
 				indices.push_back(bottom_right);
@@ -432,16 +457,29 @@ void OceanApplication::RenderGUI()
 	ImGui::DragFloat("Translation Speed", &m_cameraTranslationSpeed);
 	ImGui::DragFloat("Rotation Speed", &m_cameraRotationSpeed);
 	ImGui::Separator();
-	ImGui::Text(m_cameraEnabled ? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse" : "Press SPACE to enable camera movement");
+	ImGui::Text(m_cameraEnabled
+		? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse"
+		: "Press SPACE to enable camera movement");
 	ImGui::End();
 
 	// Terrain
 	ImGui::Begin("Terrain", &open, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::DragFloat4("Bounds", &m_terrainBounds[0]);
+	ImGui::DragFloat4("Bounds", &m_terrainBounds[0], 0.1f);
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("x: min x coord\ny: min y coord\nz: max x coord\nw: max z coord");
-	ImGui::DragFloat("Height Scale", &m_terrainHeightScale);
-	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset);
+	ImGui::DragFloat("Height Scale", &m_terrainHeightScale, 0.1f);
+	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset, 0.1f);
+	ImGui::Separator();
+	ImGui::ColorEdit3("Color", &m_terrainColor[0]);
+	ImGui::DragFloat("Specular Exponent", &m_terrainSpecularExponent, 1.0f, 0.0f, 1000.0f);
+	ImGui::End();
+
+	ImGui::Begin("Light", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::ColorEdit3("Ambient color", &m_lightAmbientColor[0]);
+	ImGui::Separator();
+	ImGui::DragFloat3("Light position", &m_lightPosition[0], 0.1f);
+	ImGui::ColorEdit3("Light color", &m_lightColor[0]);
+	ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
 	ImGui::End();
 
 	m_imGui.EndFrame();
