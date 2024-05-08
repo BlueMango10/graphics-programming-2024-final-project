@@ -72,15 +72,16 @@ private:
 
     // Textures
     std::shared_ptr<Texture2DObject> m_defaultTexture;
-    std::shared_ptr<Texture2DObject> m_heightmapTexture00;
-    std::shared_ptr<Texture2DObject> m_heightmapTexture10;
-    std::shared_ptr<Texture2DObject> m_heightmapTexture01;
-    std::shared_ptr<Texture2DObject> m_heightmapTexture11;
-    std::shared_ptr<Texture2DObject> m_dirtTexture;
-    std::shared_ptr<Texture2DObject> m_grassTexture;
-    std::shared_ptr<Texture2DObject> m_rockTexture;
-    std::shared_ptr<Texture2DObject> m_snowTexture;
-    std::shared_ptr<Texture2DObject> m_waterTexture;
+    //std::shared_ptr<Texture2DObject> m_heightmapTexture00;
+    //std::shared_ptr<Texture2DObject> m_heightmapTexture10;
+    //std::shared_ptr<Texture2DObject> m_heightmapTexture01;
+    //std::shared_ptr<Texture2DObject> m_heightmapTexture11;
+    //std::shared_ptr<Texture2DObject> m_dirtTexture;
+    //std::shared_ptr<Texture2DObject> m_grassTexture;
+    //std::shared_ptr<Texture2DObject> m_rockTexture;
+    //std::shared_ptr<Texture2DObject> m_snowTexture;
+    //std::shared_ptr<Texture2DObject> m_waterTexture;
+    std::shared_ptr<Texture2DObject> m_heightmapTexture;
 
     // GUI and misc adjustable parameters
     DearImGui m_imGui;

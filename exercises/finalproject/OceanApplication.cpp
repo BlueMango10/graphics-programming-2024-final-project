@@ -103,18 +103,19 @@ void OceanApplication::InitializeTextures()
 	m_defaultTexture = CreateDefaultTexture();
 
 	// Load terrain textures
-    m_dirtTexture = LoadTexture("textures/dirt.png");
-    m_grassTexture = LoadTexture("textures/grass.jpg");
-    m_rockTexture = LoadTexture("textures/rock.jpg");
-    m_snowTexture = LoadTexture("textures/snow.jpg");
+    //m_dirtTexture = LoadTexture("textures/dirt.png");
+    //m_grassTexture = LoadTexture("textures/grass.jpg");
+    //m_rockTexture = LoadTexture("textures/rock.jpg");
+    //m_snowTexture = LoadTexture("textures/snow.jpg");
+	m_heightmapTexture = LoadTexture("textures/heightmap.png");
 
-	m_heightmapTexture00 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, 0));
-	m_heightmapTexture10 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, 0));
-	m_heightmapTexture01 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, -1));
-	m_heightmapTexture11 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, -1));
+	//m_heightmapTexture00 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, 0));
+	//m_heightmapTexture10 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, 0));
+	//m_heightmapTexture01 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, -1));
+	//m_heightmapTexture11 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, -1));
 
 	// Load water texture here
-	m_waterTexture = LoadTexture("textures/water.png");
+	//m_waterTexture = LoadTexture("textures/water.png");
 }
 
 void OceanApplication::InitializeMaterials()
@@ -144,7 +145,7 @@ void OceanApplication::InitializeMaterials()
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
 	m_terrainMaterial->SetUniformValue("Color", glm::vec4(1.0f));
-	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture01);
+	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
 
 	// Terrain materials
 	//m_terrainMaterial00 = std::make_shared<Material>(terrainShaderProgram);
@@ -158,22 +159,22 @@ void OceanApplication::InitializeMaterials()
 	//m_terrainMaterial00->SetUniformValue("ColorTextureRange12", glm::vec2(0.1f, 0.2f));
 	//m_terrainMaterial00->SetUniformValue("ColorTextureRange23", glm::vec2(0.25f, 0.3f));
 	//m_terrainMaterial00->SetUniformValue("ColorTextureScale", glm::vec2(0.125f));
-
+	//
 	//m_terrainMaterial10 = std::make_shared<Material>(*m_terrainMaterial00);
 	//m_terrainMaterial10->SetUniformValue("Heightmap", m_heightmapTexture10);
-
+	//
 	//m_terrainMaterial01 = std::make_shared<Material>(*m_terrainMaterial00);
 	//m_terrainMaterial01->SetUniformValue("Heightmap", m_heightmapTexture01);
-
+	//
 	//m_terrainMaterial11 = std::make_shared<Material>(*m_terrainMaterial00);
 	//m_terrainMaterial11->SetUniformValue("Heightmap", m_heightmapTexture11);
-
+	//
 	// Water shader
 	//Shader waterVS = m_vertexShaderLoader.Load("shaders/water.vert");
 	//Shader waterFS = m_fragmentShaderLoader.Load("shaders/water.frag");
 	//std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
 	//waterShaderProgram->Build(waterVS, waterFS);
-
+	//
 	// Water material
 	//m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
 	//m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
@@ -433,6 +434,7 @@ void OceanApplication::RenderGUI()
 	ImGui::Separator();
 	ImGui::Text(m_cameraEnabled ? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse" : "Press SPACE to enable camera movement");
 	ImGui::End();
+
 	// Terrain
 	ImGui::Begin("Terrain", &open, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::DragFloat4("Bounds", &m_terrainBounds[0]);
