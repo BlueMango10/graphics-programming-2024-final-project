@@ -44,7 +44,7 @@ private:
 private:
     unsigned int m_gridX, m_gridY;
 
-    // Camera controller parameters
+    // Camera
     Camera m_camera;
     glm::vec3 m_cameraPosition;
     float m_cameraTranslationSpeed;
@@ -53,11 +53,14 @@ private:
     bool m_cameraEnablePressed;
     glm::vec2 m_mousePosition;
 
+    // Shader loaders
     ShaderLoader m_vertexShaderLoader;
     ShaderLoader m_fragmentShaderLoader;
 
+    // Meshes
     Mesh m_terrainPatch;
 
+    // Materials
     std::shared_ptr<Material> m_defaultMaterial;
     std::shared_ptr<Material> m_terrainMaterial00;
     std::shared_ptr<Material> m_terrainMaterial10;
@@ -65,6 +68,9 @@ private:
     std::shared_ptr<Material> m_terrainMaterial11;
     std::shared_ptr<Material> m_waterMaterial;
 
+    std::shared_ptr<Material> m_terrainMaterial;
+
+    // Textures
     std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture00;
     std::shared_ptr<Texture2DObject> m_heightmapTexture10;

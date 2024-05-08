@@ -69,16 +69,16 @@ void OceanApplication::Render()
 	GetDevice().Clear(true, Color(0.0f, 0.0f, 0.0f, 1.0f), true, 1.0f);
 
 	// Terrain patches
-	DrawObject(m_terrainPatch, *m_terrainMaterial00, glm::scale(glm::vec3(10.0f)));
-	DrawObject(m_terrainPatch, *m_terrainMaterial10, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
-	DrawObject(m_terrainPatch, *m_terrainMaterial01, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
-	DrawObject(m_terrainPatch, *m_terrainMaterial11, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
+	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::scale(glm::vec3(10.0f)));
+	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
+	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
+	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 
 	// Water patches
-	DrawObject(m_terrainPatch, *m_waterMaterial, glm::scale(glm::vec3(10.0f)));
-	DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
-	DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
-	DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
+	//DrawObject(m_terrainPatch, *m_waterMaterial, glm::scale(glm::vec3(10.0f)));
+	//DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
+	//DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
+	//DrawObject(m_terrainPatch, *m_waterMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 
 	// Render the debug user interface
 	RenderGUI();
@@ -124,46 +124,56 @@ void OceanApplication::InitializeMaterials()
 	m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 
 	// Terrain shader program
-	Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
-	Shader terrainFS = m_fragmentShaderLoader.Load("shaders/terrain.frag");
-	std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
-	terrainShaderProgram->Build(terrainVS, terrainFS);
+	//Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
+	//Shader terrainFS = m_fragmentShaderLoader.Load("shaders/terrain.frag");
+	//std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
+	//terrainShaderProgram->Build(terrainVS, terrainFS);
+
+	// Terrain blinn-phong shader program
+	Shader terrainBPVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
+	Shader terrainBPFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
+	std::shared_ptr<ShaderProgram> terrainBPShaderProgram = std::make_shared<ShaderProgram>();
+	terrainBPShaderProgram->Build(terrainBPVS, terrainBPFS);
+
+	// Terrain blinn-phong material
+	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
+	m_terrainMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 
 	// Terrain materials
-	m_terrainMaterial00 = std::make_shared<Material>(terrainShaderProgram);
-	m_terrainMaterial00->SetUniformValue("Color", glm::vec4(1.0f));
-	m_terrainMaterial00->SetUniformValue("Heightmap", m_heightmapTexture00);
-	m_terrainMaterial00->SetUniformValue("ColorTexture0", m_dirtTexture);
-	m_terrainMaterial00->SetUniformValue("ColorTexture1", m_grassTexture);
-	m_terrainMaterial00->SetUniformValue("ColorTexture2", m_rockTexture);
-	m_terrainMaterial00->SetUniformValue("ColorTexture3", m_snowTexture);
-	m_terrainMaterial00->SetUniformValue("ColorTextureRange01", glm::vec2(-0.2f, 0.0f));
-	m_terrainMaterial00->SetUniformValue("ColorTextureRange12", glm::vec2(0.1f, 0.2f));
-	m_terrainMaterial00->SetUniformValue("ColorTextureRange23", glm::vec2(0.25f, 0.3f));
-	m_terrainMaterial00->SetUniformValue("ColorTextureScale", glm::vec2(0.125f));
+	//m_terrainMaterial00 = std::make_shared<Material>(terrainShaderProgram);
+	//m_terrainMaterial00->SetUniformValue("Color", glm::vec4(1.0f));
+	//m_terrainMaterial00->SetUniformValue("Heightmap", m_heightmapTexture00);
+	//m_terrainMaterial00->SetUniformValue("ColorTexture0", m_dirtTexture);
+	//m_terrainMaterial00->SetUniformValue("ColorTexture1", m_grassTexture);
+	//m_terrainMaterial00->SetUniformValue("ColorTexture2", m_rockTexture);
+	//m_terrainMaterial00->SetUniformValue("ColorTexture3", m_snowTexture);
+	//m_terrainMaterial00->SetUniformValue("ColorTextureRange01", glm::vec2(-0.2f, 0.0f));
+	//m_terrainMaterial00->SetUniformValue("ColorTextureRange12", glm::vec2(0.1f, 0.2f));
+	//m_terrainMaterial00->SetUniformValue("ColorTextureRange23", glm::vec2(0.25f, 0.3f));
+	//m_terrainMaterial00->SetUniformValue("ColorTextureScale", glm::vec2(0.125f));
 
-	m_terrainMaterial10 = std::make_shared<Material>(*m_terrainMaterial00);
-	m_terrainMaterial10->SetUniformValue("Heightmap", m_heightmapTexture10);
+	//m_terrainMaterial10 = std::make_shared<Material>(*m_terrainMaterial00);
+	//m_terrainMaterial10->SetUniformValue("Heightmap", m_heightmapTexture10);
 
-	m_terrainMaterial01 = std::make_shared<Material>(*m_terrainMaterial00);
-	m_terrainMaterial01->SetUniformValue("Heightmap", m_heightmapTexture01);
+	//m_terrainMaterial01 = std::make_shared<Material>(*m_terrainMaterial00);
+	//m_terrainMaterial01->SetUniformValue("Heightmap", m_heightmapTexture01);
 
-	m_terrainMaterial11 = std::make_shared<Material>(*m_terrainMaterial00);
-	m_terrainMaterial11->SetUniformValue("Heightmap", m_heightmapTexture11);
+	//m_terrainMaterial11 = std::make_shared<Material>(*m_terrainMaterial00);
+	//m_terrainMaterial11->SetUniformValue("Heightmap", m_heightmapTexture11);
 
 	// Water shader
-	Shader waterVS = m_vertexShaderLoader.Load("shaders/water.vert");
-	Shader waterFS = m_fragmentShaderLoader.Load("shaders/water.frag");
-	std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
-	waterShaderProgram->Build(waterVS, waterFS);
+	//Shader waterVS = m_vertexShaderLoader.Load("shaders/water.vert");
+	//Shader waterFS = m_fragmentShaderLoader.Load("shaders/water.frag");
+	//std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
+	//waterShaderProgram->Build(waterVS, waterFS);
 
 	// Water material
-	m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
-	m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
-	m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
-	m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.0625f));
-	m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
-	m_waterMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
+	//m_waterMaterial = std::make_shared<Material>(waterShaderProgram);
+	//m_waterMaterial->SetUniformValue("Color", glm::vec4(1.0f, 1.0f, 1.0f, 0.5f));
+	//m_waterMaterial->SetUniformValue("ColorTexture", m_waterTexture);
+	//m_waterMaterial->SetUniformValue("ColorTextureScale", glm::vec2(0.0625f));
+	//m_waterMaterial->SetBlendEquation(Material::BlendEquation::Add);
+	//m_waterMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
 }
 
 void OceanApplication::InitializeMeshes()
