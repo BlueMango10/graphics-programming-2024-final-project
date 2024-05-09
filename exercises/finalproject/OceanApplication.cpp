@@ -32,15 +32,17 @@ OceanApplication::OceanApplication()
 	// Adjustable values
 	// Terrain
 	, m_terrainBounds(glm::vec4(-10.0f, -10.0f, 10.0f, 10.0f))
-	, m_terrainHeightScale(1.0f)
+	, m_terrainHeightScale(1.5f)
 	, m_terrainHeightOffset(0.0f)
+	, m_terrainSampleOffset(0.5f)
 	, m_terrainColor(glm::vec4(1.0f))
-	, m_terrainSpecularExponent(100.0f)
+	, m_terrainSpecularExponent(10.0f)
+	, m_terrainSpecularReflection(0.1f)
 	// Light
-	, m_lightAmbientColor(0.0f)
+	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
 	, m_lightIntensity(1.0f)
-	, m_lightPosition(0.0f)
+	, m_lightPosition(glm::vec3(-2.5f, 4.0f, -5.0f))
 {
 }
 
@@ -114,7 +116,7 @@ void OceanApplication::InitializeTextures()
 	m_defaultTexture = CreateDefaultTexture();
 
 	// Load terrain textures
-    //m_dirtTexture = LoadTexture("textures/dirt.png");
+    m_terrainTexture = LoadTexture("textures/dirt.png");
     //m_grassTexture = LoadTexture("textures/grass.jpg");
     //m_rockTexture = LoadTexture("textures/rock.jpg");
     //m_snowTexture = LoadTexture("textures/snow.jpg");
@@ -155,7 +157,10 @@ void OceanApplication::InitializeMaterials()
 
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
-	m_terrainMaterial->SetUniformValue("Color", glm::vec4(1.0f));
+	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	m_terrainMaterial->SetUniformValue("Albedo", m_terrainTexture);
+	m_terrainMaterial->SetUniformValue("AmbientReflection", 1.0f);
+	m_terrainMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	UpdateUniforms();
 
 	// Terrain materials
@@ -203,11 +208,19 @@ void OceanApplication::InitializeMeshes()
 void OceanApplication::UpdateUniforms()
 {
 	// Terrain
-	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	// vertex
 	m_terrainMaterial->SetUniformValue("HeightmapBounds", m_terrainBounds);
 	m_terrainMaterial->SetUniformValue("HeightScale", m_terrainHeightScale);
 	m_terrainMaterial->SetUniformValue("HeightOffset", m_terrainHeightOffset);
+	m_terrainMaterial->SetUniformValue("NormalSampleOffset", m_terrainSampleOffset);
+	// fragment
 	m_terrainMaterial->SetUniformValue("Color", m_terrainColor);
+	m_terrainMaterial->SetUniformValue("SpecularExponent", m_terrainSpecularExponent);
+	m_terrainMaterial->SetUniformValue("AmbientColor", m_lightAmbientColor);
+	m_terrainMaterial->SetUniformValue("LightColor", m_lightColor * m_lightIntensity);
+	m_terrainMaterial->SetUniformValue("LightDirection", m_lightPosition);
+	m_terrainMaterial->SetUniformValue("CameraPosition", m_cameraPosition);
+	m_terrainMaterial->SetUniformValue("SpecularReflection", m_terrainSpecularReflection);
 }
 
 std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
@@ -469,17 +482,22 @@ void OceanApplication::RenderGUI()
 		ImGui::SetTooltip("x: min x coord\ny: min y coord\nz: max x coord\nw: max z coord");
 	ImGui::DragFloat("Height Scale", &m_terrainHeightScale, 0.1f);
 	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset, 0.1f);
+	ImGui::DragFloat("Normal Sample Offset", &m_terrainSampleOffset, 0.01f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("If this is too big, the normals become inaccurate. If it is too small, it becomes glitchy.");
 	ImGui::Separator();
 	ImGui::ColorEdit3("Color", &m_terrainColor[0]);
 	ImGui::DragFloat("Specular Exponent", &m_terrainSpecularExponent, 1.0f, 0.0f, 1000.0f);
+	ImGui::DragFloat("Specular Reflection", &m_terrainSpecularReflection, 0.1f, 0.0f, 1.0f);
 	ImGui::End();
 
+	// Light
 	ImGui::Begin("Light", &open, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::ColorEdit3("Ambient color", &m_lightAmbientColor[0]);
+	ImGui::ColorEdit3("Ambient Light Color", &m_lightAmbientColor[0]);
 	ImGui::Separator();
-	ImGui::DragFloat3("Light position", &m_lightPosition[0], 0.1f);
-	ImGui::ColorEdit3("Light color", &m_lightColor[0]);
-	ImGui::DragFloat("Light intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
+	ImGui::DragFloat3("Light Direction", &m_lightPosition[0], 0.1f);
+	ImGui::ColorEdit3("Light Color", &m_lightColor[0]);
+	ImGui::DragFloat("Light Intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
 	ImGui::End();
 
 	m_imGui.EndFrame();
