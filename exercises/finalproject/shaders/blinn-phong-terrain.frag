@@ -41,8 +41,8 @@ vec3 diffuse(vec3 albedo, vec3 lightDirection, vec3 normal)
 
 vec3 specular(vec3 lightDirection, vec3 viewDirection, vec3 normal)
 {
-	vec3 half = normalize(lightDirection + viewDirection);
-	return LightColor * SpecularReflection * pow(max(dot(half, normal), 0.0), SpecularExponent);
+	vec3 halfVector = normalize(lightDirection + viewDirection);
+	return LightColor * SpecularReflection * pow(max(dot(halfVector, normal), 0.0), SpecularExponent);
 }
 
 vec3 blinnPhong(vec3 albedo, vec3 lightDirection, vec3 viewDirection, vec3 normal)
