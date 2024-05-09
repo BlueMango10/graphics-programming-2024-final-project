@@ -9,6 +9,7 @@
 #include <ituGL/utils/DearImGui.h>
 #include <glm/mat4x4.hpp>
 #include <vector>
+#include <chrono>
 
 class Texture2DObject;
 
@@ -44,6 +45,7 @@ private:
 
 private:
     unsigned int m_gridX, m_gridY;
+    std::chrono::steady_clock::time_point m_startTime;
 
     // Camera
     Camera m_camera;
@@ -67,9 +69,8 @@ private:
     //std::shared_ptr<Material> m_terrainMaterial10;
     //std::shared_ptr<Material> m_terrainMaterial01;
     //std::shared_ptr<Material> m_terrainMaterial11;
-    //std::shared_ptr<Material> m_waterMaterial;
-
     std::shared_ptr<Material> m_terrainMaterial;
+    std::shared_ptr<Material> m_oceanMaterial;
 
     // Textures
     std::shared_ptr<Texture2DObject> m_defaultTexture;
@@ -81,7 +82,7 @@ private:
     //std::shared_ptr<Texture2DObject> m_grassTexture;
     //std::shared_ptr<Texture2DObject> m_rockTexture;
     //std::shared_ptr<Texture2DObject> m_snowTexture;
-    //std::shared_ptr<Texture2DObject> m_waterTexture;
+    std::shared_ptr<Texture2DObject> m_oceanTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture;
 
 
@@ -98,6 +99,12 @@ private:
     glm::vec4 m_terrainColor;
     float m_terrainSpecularReflection;
     float m_terrainSpecularExponent;
+
+    // Water
+    // fragment
+    glm::vec4 m_oceanColor;
+    float m_oceanSpecularReflection;
+    float m_oceanSpecularExponent;
     
     // Light
     glm::vec3 m_lightAmbientColor;

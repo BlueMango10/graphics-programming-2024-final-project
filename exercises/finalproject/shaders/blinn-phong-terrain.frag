@@ -55,7 +55,7 @@ void main()
 	vec3 albedo = Color.rgb * texture(Albedo, WorldPosition.xz).rgb;
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
 
-	FragColor = vec4(blinnPhong(albedo, normalize(LightDirection), viewDirection, normalize(WorldNormal)), 1.0);
+	FragColor = vec4(blinnPhong(albedo, normalize(LightDirection), viewDirection, normalize(WorldNormal)), Color.a);
 
 	//FragColor = texture(Heightmap, worldToTextureCoord(WorldPosition.xz)) * Color; //debug heightmap
 	//FragColor = mix(vec4(0.5), vec4(1.0), vec4(WorldNormal, 1)); //debug normals
