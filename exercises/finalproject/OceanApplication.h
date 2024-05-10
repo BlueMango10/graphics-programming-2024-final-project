@@ -65,23 +65,12 @@ private:
 
     // Materials
     std::shared_ptr<Material> m_defaultMaterial;
-    //std::shared_ptr<Material> m_terrainMaterial00;
-    //std::shared_ptr<Material> m_terrainMaterial10;
-    //std::shared_ptr<Material> m_terrainMaterial01;
-    //std::shared_ptr<Material> m_terrainMaterial11;
     std::shared_ptr<Material> m_terrainMaterial;
     std::shared_ptr<Material> m_oceanMaterial;
 
     // Textures
     std::shared_ptr<Texture2DObject> m_defaultTexture;
-    //std::shared_ptr<Texture2DObject> m_heightmapTexture00;
-    //std::shared_ptr<Texture2DObject> m_heightmapTexture10;
-    //std::shared_ptr<Texture2DObject> m_heightmapTexture01;
-    //std::shared_ptr<Texture2DObject> m_heightmapTexture11;
     std::shared_ptr<Texture2DObject> m_terrainTexture;
-    //std::shared_ptr<Texture2DObject> m_grassTexture;
-    //std::shared_ptr<Texture2DObject> m_rockTexture;
-    //std::shared_ptr<Texture2DObject> m_snowTexture;
     std::shared_ptr<Texture2DObject> m_oceanTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture;
 

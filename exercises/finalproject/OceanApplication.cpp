@@ -45,7 +45,7 @@ OceanApplication::OceanApplication()
 	, m_oceanSpecularExponent(700.0f)
 	, m_oceanSpecularReflection(1.0f)
 	, m_oceanWaveFrequency(4.0f)
-	, m_oceanWaveSpeed(1.0f)
+	, m_oceanWaveSpeed(-1.0f)
 	, m_oceanWaveWidth(0.25f)
 	, m_oceanWaveHeight(0.15f)
 	, m_oceanCoastOffset(0.05f)
@@ -128,15 +128,7 @@ void OceanApplication::InitializeTextures()
 
 	// Load terrain textures
     m_terrainTexture = LoadTexture("textures/dirt.png");
-    //m_grassTexture = LoadTexture("textures/grass.jpg");
-    //m_rockTexture = LoadTexture("textures/rock.jpg");
-    //m_snowTexture = LoadTexture("textures/snow.jpg");
 	m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
-
-	//m_heightmapTexture00 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, 0));
-	//m_heightmapTexture10 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, 0));
-	//m_heightmapTexture01 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(0, -1));
-	//m_heightmapTexture11 = CreateHeightMap(m_gridX, m_gridY, glm::ivec2(-1, -1));
 
 	// Load water texture here
 	m_oceanTexture = LoadTexture("textures/water.png");
@@ -154,12 +146,6 @@ void OceanApplication::InitializeMaterials()
 	m_defaultMaterial = std::make_shared<Material>(defaultShaderProgram);
 	m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 
-	// Terrain shader program
-	//Shader terrainVS = m_vertexShaderLoader.Load("shaders/terrain.vert");
-	//Shader terrainFS = m_fragmentShaderLoader.Load("shaders/terrain.frag");
-	//std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
-	//terrainShaderProgram->Build(terrainVS, terrainFS);
-
 	// Terrain blinn-phong shader program
 	Shader terrainBPVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
 	Shader terrainBPFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
@@ -172,28 +158,6 @@ void OceanApplication::InitializeMaterials()
 	m_terrainMaterial->SetUniformValue("Albedo", m_terrainTexture);
 	m_terrainMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_terrainMaterial->SetUniformValue("DiffuseReflection", 1.0f);
-
-	// Terrain materials
-	//m_terrainMaterial00 = std::make_shared<Material>(terrainShaderProgram);
-	//m_terrainMaterial00->SetUniformValue("Color", glm::vec4(1.0f));
-	//m_terrainMaterial00->SetUniformValue("Heightmap", m_heightmapTexture00);
-	//m_terrainMaterial00->SetUniformValue("ColorTexture0", m_dirtTexture);
-	//m_terrainMaterial00->SetUniformValue("ColorTexture1", m_grassTexture);
-	//m_terrainMaterial00->SetUniformValue("ColorTexture2", m_rockTexture);
-	//m_terrainMaterial00->SetUniformValue("ColorTexture3", m_snowTexture);
-	//m_terrainMaterial00->SetUniformValue("ColorTextureRange01", glm::vec2(-0.2f, 0.0f));
-	//m_terrainMaterial00->SetUniformValue("ColorTextureRange12", glm::vec2(0.1f, 0.2f));
-	//m_terrainMaterial00->SetUniformValue("ColorTextureRange23", glm::vec2(0.25f, 0.3f));
-	//m_terrainMaterial00->SetUniformValue("ColorTextureScale", glm::vec2(0.125f));
-	//
-	//m_terrainMaterial10 = std::make_shared<Material>(*m_terrainMaterial00);
-	//m_terrainMaterial10->SetUniformValue("Heightmap", m_heightmapTexture10);
-	//
-	//m_terrainMaterial01 = std::make_shared<Material>(*m_terrainMaterial00);
-	//m_terrainMaterial01->SetUniformValue("Heightmap", m_heightmapTexture01);
-	//
-	//m_terrainMaterial11 = std::make_shared<Material>(*m_terrainMaterial00);
-	//m_terrainMaterial11->SetUniformValue("Heightmap", m_heightmapTexture11);
 	
 	// Water shader
 	Shader waterVS = m_vertexShaderLoader.Load("shaders/ocean.vert");
