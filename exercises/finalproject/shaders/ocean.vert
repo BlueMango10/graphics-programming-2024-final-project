@@ -9,13 +9,25 @@ out vec3 WorldNormal;
 out vec2 TexCoord;
 out float Depth;
 
+// World
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
 uniform float Time;
+
+// Terrain info
 uniform sampler2D Heightmap;
 uniform vec4 HeightmapBounds; // xy = min coord, zw = max coord
 uniform float HeightScale;
 uniform float HeightOffset;
+
+// Shape
+uniform float WaveFrequency;
+uniform float WaveSpeed;
+uniform float WaveWidth;
+uniform float WaveHeight;
+uniform float CoastOffset;
+
+// Shading
 uniform float NormalSampleOffset;
 
 // Convert world coordinates to texture coordinates
@@ -35,10 +47,11 @@ float getDepth(vec3 worldPosition)
 // Get the final world position from the original world position
 vec3 getPosition(vec3 worldPosition)
 {
-	float waveHeight = max(0, Depth);
+	float waveTime = ((worldPosition.x + (Time * WaveSpeed)) * WaveFrequency);
+	float waveHeight = max(0, Depth + CoastOffset);
 	vec3 wavePosition = worldPosition;
-	wavePosition.y = worldPosition.y + sin(worldPosition.x + Time);
-	wavePosition.x = worldPosition.x + cos(worldPosition.x + Time);
+	wavePosition.y = worldPosition.y + (sin(waveTime) * WaveHeight);
+	wavePosition.x = worldPosition.x + (cos(waveTime) * WaveWidth);
 	worldPosition = mix(worldPosition, wavePosition, waveHeight);
 	return worldPosition;
 }
@@ -62,7 +75,7 @@ void main()
 	// find base values
 	WorldPosition = (WorldMatrix * vec4(VertexPosition, 1.0)).xyz;
 	WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
-	TexCoord = VertexTexCoord;
+	TexCoord = WorldPosition.xz;
 
 	// position
 	Depth = getDepth(WorldPosition);

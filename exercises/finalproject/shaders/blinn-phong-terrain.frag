@@ -52,7 +52,7 @@ vec3 blinnPhong(vec3 albedo, vec3 lightDirection, vec3 viewDirection, vec3 norma
 
 void main()
 {
-	vec3 albedo = Color.rgb * texture(Albedo, WorldPosition.xz).rgb;
+	vec3 albedo = Color.rgb * texture(Albedo, TexCoord).rgb;
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
 
 	FragColor = vec4(blinnPhong(albedo, normalize(LightDirection), viewDirection, normalize(WorldNormal)), Color.a);

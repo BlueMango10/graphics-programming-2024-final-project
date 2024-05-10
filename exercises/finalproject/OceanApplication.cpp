@@ -25,7 +25,7 @@ OceanApplication::OceanApplication()
 	, m_vertexShaderLoader(Shader::Type::VertexShader)
 	, m_fragmentShaderLoader(Shader::Type::FragmentShader)
 	// Camera
-	, m_cameraPosition(0, 30, 30)
+	, m_cameraPosition(10, 15, 20)
 	, m_cameraTranslationSpeed(20.0f)
 	, m_cameraRotationSpeed(0.5f)
 	, m_cameraEnabled(false)
@@ -44,6 +44,11 @@ OceanApplication::OceanApplication()
 	, m_oceanColor(glm::vec4(1.0f))
 	, m_oceanSpecularExponent(700.0f)
 	, m_oceanSpecularReflection(1.0f)
+	, m_oceanWaveFrequency(4.0f)
+	, m_oceanWaveSpeed(1.0f)
+	, m_oceanWaveWidth(0.25f)
+	, m_oceanWaveHeight(0.15f)
+	, m_oceanCoastOffset(0.05f)
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -242,9 +247,15 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("Time", static_cast<float>(time.count()) / 1000);
 
 	// vertex
+	m_oceanMaterial->SetUniformValue("WaveFrequency", m_oceanWaveFrequency);
+	m_oceanMaterial->SetUniformValue("WaveSpeed", m_oceanWaveSpeed);
+	m_oceanMaterial->SetUniformValue("WaveWidth", m_oceanWaveWidth);
+	m_oceanMaterial->SetUniformValue("WaveHeight", m_oceanWaveHeight);
+
 	m_oceanMaterial->SetUniformValue("HeightmapBounds", m_terrainBounds);
 	m_oceanMaterial->SetUniformValue("HeightScale", m_terrainHeightScale);
 	m_oceanMaterial->SetUniformValue("HeightOffset", m_terrainHeightOffset);
+	m_oceanMaterial->SetUniformValue("CoastOffset", m_oceanCoastOffset);
 	m_oceanMaterial->SetUniformValue("NormalSampleOffset", m_terrainSampleOffset);
 	
 	// fragment
@@ -520,7 +531,7 @@ void OceanApplication::RenderGUI()
 	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset, 0.1f);
 	ImGui::DragFloat("Normal Sample Offset", &m_terrainSampleOffset, 0.01f);
 	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("If this is too big, the normals become inaccurate. If it is too small, it becomes glitchy.");
+		ImGui::SetTooltip("The sample offset used to approximate normals on the terrain and water. If this is too big, the normals become inaccurate. If it is too small, it becomes glitchy.");
 	ImGui::Separator();
 	ImGui::ColorEdit3("Color", &m_terrainColor[0]);
 	ImGui::DragFloat("Specular Exponent", &m_terrainSpecularExponent, 1.0f, 0.0f, 1000.0f);
@@ -529,6 +540,14 @@ void OceanApplication::RenderGUI()
 
 	// Ocean
 	ImGui::Begin("Ocean", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::DragFloat("Wave Frequency", &m_oceanWaveFrequency, 0.01f);
+	ImGui::DragFloat("Wave Speed", &m_oceanWaveSpeed, 0.01f);
+	ImGui::DragFloat("Wave Width", &m_oceanWaveWidth, 0.01f);
+	ImGui::DragFloat("Wave Height", &m_oceanWaveHeight, 0.01f);
+	ImGui::DragFloat("Coast Offset", &m_oceanCoastOffset, 0.01f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("A small offset applied to the terrain height to control how close to the shore the water waves disappear.");
+	ImGui::Separator();
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
 	ImGui::DragFloat("Specular Exponent", &m_oceanSpecularExponent, 1.0f, 0.0f, 1000.0f);
 	ImGui::DragFloat("Specular Reflection", &m_oceanSpecularReflection, 0.1f, 0.0f, 1.0f);

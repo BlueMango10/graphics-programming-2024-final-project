@@ -49,7 +49,7 @@ void main()
 	// find base values
 	WorldPosition = (WorldMatrix * vec4(VertexPosition, 1.0)).xyz;
 	WorldNormal = (WorldMatrix * vec4(VertexNormal, 0.0)).xyz;
-	TexCoord = VertexTexCoord;
+	TexCoord = WorldPosition.xz;
 
 	// position
 	WorldPosition = getPosition(WorldPosition);

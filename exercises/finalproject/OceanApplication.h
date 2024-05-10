@@ -101,6 +101,12 @@ private:
     float m_terrainSpecularExponent;
 
     // Water
+    // vertex
+    float m_oceanWaveFrequency;
+    float m_oceanWaveSpeed;
+    float m_oceanWaveWidth;
+    float m_oceanWaveHeight;
+    float m_oceanCoastOffset;
     // fragment
     glm::vec4 m_oceanColor;
     float m_oceanSpecularReflection;
