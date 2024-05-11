@@ -128,7 +128,8 @@ void OceanApplication::InitializeTextures()
 
 	// Load terrain textures
     m_terrainTexture = LoadTexture("textures/dirt.png");
-	m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
+	//m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
+	m_heightmapTexture = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
 
 	// Load water texture here
 	m_oceanTexture = LoadTexture("textures/water.png");

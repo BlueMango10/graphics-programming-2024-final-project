@@ -44,9 +44,19 @@ float getDepth(vec3 worldPosition)
 	return -height;
 }
 
+// Get vertex offset produced by a Gerstner wave
+vec3 gerstnerWave(vec3 worldPosition, float speed, float frequency, float height, vec2 direction /*width is just the magnitude of the direction*/)
+{
+	float waveTime = ((worldPosition.x + (Time * speed)) * frequency);
+	float cosWT = cos(waveTime); // no reason to do this twice
+	vec3 offset = vec3(cosWT * direction.x, sin(waveTime) * height, cosWT * direction.y); // gerstner wave happens here B)
+	return offset;
+}
+
 // Get the final world position from the original world position
 vec3 getPosition(vec3 worldPosition)
 {
+	/*
 	float waveTime = ((worldPosition.x + (Time * WaveSpeed)) * WaveFrequency);
 	float waveHeight = max(0, Depth + CoastOffset);
 	vec3 wavePosition = worldPosition;
@@ -54,6 +64,10 @@ vec3 getPosition(vec3 worldPosition)
 	wavePosition.x = worldPosition.x + (cos(waveTime) * WaveWidth);
 	worldPosition = mix(worldPosition, wavePosition, waveHeight);
 	return worldPosition;
+	*/
+	float waveScale = max(0, Depth + CoastOffset);
+	vec3 wave = gerstnerWave(worldPosition, WaveSpeed, WaveFrequency, WaveHeight, vec2(WaveWidth, 0));
+	return worldPosition + wave * waveScale;
 }
 
 // Approximate normal
