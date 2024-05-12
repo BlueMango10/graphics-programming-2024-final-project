@@ -44,11 +44,11 @@ OceanApplication::OceanApplication()
 	, m_oceanColor(glm::vec4(1.0f))
 	, m_oceanSpecularExponent(700.0f)
 	, m_oceanSpecularReflection(1.0f)
-	, m_oceanWaveFrequency(10.0f)
-	, m_oceanWaveSpeed(-0.2f)
-	, m_oceanWaveWidth(0.25f)
-	, m_oceanWaveHeight(0.15f)
-	, m_oceanWaveDirection(0.3f)
+	, m_oceanWaveFrequency(glm::vec4(0.38f, 0.49f, 2.38f, 0.39f)) // I have found these values to work well by experimentation
+	, m_oceanWaveSpeed    (glm::vec4(1.21f, 1.42f, 1.05f, 0.61f))
+	, m_oceanWaveWidth    (glm::vec4(0.41f, 0.92f, 0.19f, 0.07f))
+	, m_oceanWaveHeight   (glm::vec4(0.40f, 0.24f, 0.06f, 0.03f))
+	, m_oceanWaveDirection(glm::vec4(2.52f, 3.89f, 3.54f, 2.68f))
 	, m_oceanCoastOffset(0.05f)
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
@@ -129,8 +129,8 @@ void OceanApplication::InitializeTextures()
 
 	// Load terrain textures
     m_terrainTexture = LoadTexture("textures/dirt.png");
-	//m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
-	m_heightmapTexture = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
+	m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
+	//m_heightmapTexture = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
 
 	// Load water texture here
 	m_oceanTexture = LoadTexture("textures/water.png");
@@ -215,8 +215,18 @@ void OceanApplication::UpdateUniforms()
 	// vertex
 	m_oceanMaterial->SetUniformValue("WaveFrequency", m_oceanWaveFrequency);
 	m_oceanMaterial->SetUniformValue("WaveSpeed", m_oceanWaveSpeed);
-	m_oceanMaterial->SetUniformValue("WaveDirection", glm::vec2(cos(m_oceanWaveDirection), sin(m_oceanWaveDirection)) * m_oceanWaveWidth);
+	m_oceanMaterial->SetUniformValue("WaveDirectionX", glm::vec4(
+		cos(m_oceanWaveDirection.x),
+		cos(m_oceanWaveDirection.y),
+		cos(m_oceanWaveDirection.z),
+		cos(m_oceanWaveDirection.w)));
+	m_oceanMaterial->SetUniformValue("WaveDirectionY", glm::vec4(
+		sin(m_oceanWaveDirection.x),
+		sin(m_oceanWaveDirection.y),
+		sin(m_oceanWaveDirection.z),
+		sin(m_oceanWaveDirection.w)));
 	m_oceanMaterial->SetUniformValue("WaveHeight", m_oceanWaveHeight);
+	m_oceanMaterial->SetUniformValue("WaveWidth", m_oceanWaveWidth);
 
 	m_oceanMaterial->SetUniformValue("HeightmapBounds", m_terrainBounds);
 	m_oceanMaterial->SetUniformValue("HeightScale", m_terrainHeightScale);
@@ -506,11 +516,12 @@ void OceanApplication::RenderGUI()
 
 	// Ocean
 	ImGui::Begin("Ocean", &open, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::DragFloat("Wave Frequency", &m_oceanWaveFrequency, 0.01f);
-	ImGui::DragFloat("Wave Speed", &m_oceanWaveSpeed, 0.01f);
-	ImGui::DragFloat("Wave Width", &m_oceanWaveWidth, 0.01f);
-	ImGui::DragFloat("Wave Height", &m_oceanWaveHeight, 0.01f);
-	ImGui::DragFloat("Wave Direction", &m_oceanWaveDirection, 0.01f);
+	ImGui::DragFloat4("Wave Frequency", &m_oceanWaveFrequency[0], 0.01f);
+	ImGui::DragFloat4("Wave Speed", &m_oceanWaveSpeed[0], 0.01f);
+	ImGui::DragFloat4("Wave Width", &m_oceanWaveWidth[0], 0.01f);
+	ImGui::DragFloat4("Wave Height", &m_oceanWaveHeight[0], 0.01f);
+	ImGui::DragFloat4("Wave Direction", &m_oceanWaveDirection[0], 0.01f);
+	ImGui::Separator();
 	ImGui::DragFloat("Coast Offset", &m_oceanCoastOffset, 0.01f);
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("A small offset applied to the terrain height to control how close to the shore the water waves disappear.");

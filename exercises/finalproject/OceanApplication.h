@@ -91,11 +91,11 @@ private:
 
     // Water
     // vertex
-    float m_oceanWaveFrequency;
-    float m_oceanWaveSpeed;
-    float m_oceanWaveWidth;
-    float m_oceanWaveHeight;
-    float m_oceanWaveDirection;
+    glm::vec4 m_oceanWaveFrequency;
+    glm::vec4 m_oceanWaveSpeed;
+    glm::vec4 m_oceanWaveWidth;
+    glm::vec4 m_oceanWaveHeight;
+    glm::vec4 m_oceanWaveDirection;
     float m_oceanCoastOffset;
     // fragment
     glm::vec4 m_oceanColor;
