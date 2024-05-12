@@ -135,7 +135,7 @@ void OceanApplication::InitializeTextures()
 	m_heightmapTexture[1] = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
 
 	// Load water texture here
-	m_oceanTexture = LoadTexture("textures/water.png");
+	m_oceanTexture = LoadTexture("textures/water_n.png");
 }
 
 void OceanApplication::InitializeMaterials()
@@ -151,10 +151,10 @@ void OceanApplication::InitializeMaterials()
 	m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 
 	// Terrain blinn-phong shader program
-	Shader terrainBPVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
-	Shader terrainBPFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
+	Shader terrainVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
+	Shader terrainFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
 	std::shared_ptr<ShaderProgram> terrainBPShaderProgram = std::make_shared<ShaderProgram>();
-	terrainBPShaderProgram->Build(terrainBPVS, terrainBPFS);
+	terrainBPShaderProgram->Build(terrainVS, terrainFS);
 
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
@@ -165,7 +165,7 @@ void OceanApplication::InitializeMaterials()
 	
 	// Water shader
 	Shader waterVS = m_vertexShaderLoader.Load("shaders/ocean.vert");
-	Shader waterFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
+	Shader waterFS = m_fragmentShaderLoader.Load("shaders/ocean.frag");
 	std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
 	waterShaderProgram->Build(waterVS, waterFS);
 	
