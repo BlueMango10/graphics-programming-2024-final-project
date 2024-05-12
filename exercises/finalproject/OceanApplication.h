@@ -106,6 +106,8 @@ private:
     glm::vec4 m_oceanColor;
     float m_oceanSpecularReflection;
     float m_oceanSpecularExponent;
+    float m_oceanDetailAnimSpeed;
+    float m_oceanDetailScale;
     
     // Light
     glm::vec3 m_lightAmbientColor;
