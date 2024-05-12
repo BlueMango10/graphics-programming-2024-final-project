@@ -95,6 +95,7 @@ private:
     float m_oceanWaveSpeed;
     float m_oceanWaveWidth;
     float m_oceanWaveHeight;
+    float m_oceanWaveDirection;
     float m_oceanCoastOffset;
     // fragment
     glm::vec4 m_oceanColor;
