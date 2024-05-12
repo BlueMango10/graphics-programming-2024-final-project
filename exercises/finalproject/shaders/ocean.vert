@@ -28,6 +28,8 @@ uniform vec4 WaveDirectionY;
 uniform vec4 WaveHeight;
 uniform vec4 WaveWidth;
 uniform float CoastOffset;
+uniform float CoastExponent;
+uniform float WaveScale;
 
 // Shading
 uniform float NormalSampleOffset;
@@ -59,11 +61,12 @@ vec3 gerstnerWave(vec3 worldPosition, float speed, float frequency, float height
 vec3 getPosition(vec3 worldPosition)
 {
 	float waveScale = max(0, Depth + CoastOffset);
+	waveScale = min(waveScale, pow(waveScale, CoastExponent));
 	vec3 wave = gerstnerWave(worldPosition, WaveSpeed.x, WaveFrequency.x, WaveHeight.x, WaveWidth.x, vec2(WaveDirectionX.x, WaveDirectionY.x));
 	wave += gerstnerWave(worldPosition, WaveSpeed.y, WaveFrequency.y, WaveHeight.y, WaveWidth.y, vec2(WaveDirectionX.y, WaveDirectionY.y));
 	wave += gerstnerWave(worldPosition, WaveSpeed.z, WaveFrequency.z, WaveHeight.z, WaveWidth.z, vec2(WaveDirectionX.z, WaveDirectionY.z));
 	wave += gerstnerWave(worldPosition, WaveSpeed.w, WaveFrequency.w, WaveHeight.w, WaveWidth.w, vec2(WaveDirectionX.w, WaveDirectionY.w));
-	return worldPosition + wave * waveScale;
+	return worldPosition + wave * waveScale * WaveScale;
 }
 
 // Approximate normal

@@ -31,7 +31,10 @@ private:
     void InitializeCamera();
 
     void UpdateCamera();
+    // Update all uniform values that should update every frame (i.e. configurable in debug UI)
     void UpdateUniforms();
+    // Update configurable values and change terrain
+    void ApplyPreset(int presetId);
 
     void RenderGUI();
 
@@ -72,7 +75,7 @@ private:
     std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_terrainTexture;
     std::shared_ptr<Texture2DObject> m_oceanTexture;
-    std::shared_ptr<Texture2DObject> m_heightmapTexture;
+    std::shared_ptr<Texture2DObject> m_heightmapTexture[2];
 
 
     // GUI and misc adjustable parameters
@@ -97,6 +100,8 @@ private:
     glm::vec4 m_oceanWaveHeight;
     glm::vec4 m_oceanWaveDirection;
     float m_oceanCoastOffset;
+    float m_oceanCoastExponent;
+    float m_oceanWaveScale;
     // fragment
     glm::vec4 m_oceanColor;
     float m_oceanSpecularReflection;

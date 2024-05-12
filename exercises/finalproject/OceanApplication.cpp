@@ -44,12 +44,14 @@ OceanApplication::OceanApplication()
 	, m_oceanColor(glm::vec4(1.0f))
 	, m_oceanSpecularExponent(700.0f)
 	, m_oceanSpecularReflection(1.0f)
-	, m_oceanWaveFrequency(glm::vec4(0.38f, 0.49f, 2.38f, 0.39f)) // I have found these values to work well by experimentation
+	, m_oceanWaveFrequency(glm::vec4(0.38f, 0.49f, 2.38f, 1.71f)) // I have found these values to work well by experimentation
 	, m_oceanWaveSpeed    (glm::vec4(1.21f, 1.42f, 1.05f, 0.61f))
 	, m_oceanWaveWidth    (glm::vec4(0.41f, 0.92f, 0.19f, 0.07f))
-	, m_oceanWaveHeight   (glm::vec4(0.40f, 0.24f, 0.06f, 0.03f))
+	, m_oceanWaveHeight   (glm::vec4(0.40f, 0.24f, 0.03f, 0.08f))
 	, m_oceanWaveDirection(glm::vec4(2.52f, 3.89f, 3.54f, 2.68f))
-	, m_oceanCoastOffset(0.05f)
+	, m_oceanCoastOffset(0.0f)
+	, m_oceanCoastExponent(1.0f)
+	, m_oceanWaveScale(1.0f)
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -129,8 +131,8 @@ void OceanApplication::InitializeTextures()
 
 	// Load terrain textures
     m_terrainTexture = LoadTexture("textures/dirt.png");
-	m_heightmapTexture = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
-	//m_heightmapTexture = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
+	m_heightmapTexture[0] = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
+	m_heightmapTexture[1] = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
 
 	// Load water texture here
 	m_oceanTexture = LoadTexture("textures/water.png");
@@ -156,7 +158,7 @@ void OceanApplication::InitializeMaterials()
 
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
-	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	// (heightmap is set in ApplyPreset)
 	m_terrainMaterial->SetUniformValue("Albedo", m_terrainTexture);
 	m_terrainMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_terrainMaterial->SetUniformValue("DiffuseReflection", 1.0f);
@@ -169,14 +171,15 @@ void OceanApplication::InitializeMaterials()
 	
 	// Water material
 	m_oceanMaterial = std::make_shared<Material>(waterShaderProgram);
-	m_oceanMaterial->SetUniformValue("Heightmap", m_heightmapTexture);
+	// (heightmap is set in ApplyPreset)
 	m_oceanMaterial->SetUniformValue("Albedo", m_oceanTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	m_oceanMaterial->SetBlendEquation(Material::BlendEquation::Add);
 	m_oceanMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
 	
-	// Initial call to UpdateUniforms to initialize the uniform values
+	// Initial call to ApplyPreset and UpdateUniforms to initialize the uniform values
+	ApplyPreset(0);
 	UpdateUniforms();
 }
 
@@ -232,6 +235,9 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("HeightScale", m_terrainHeightScale);
 	m_oceanMaterial->SetUniformValue("HeightOffset", m_terrainHeightOffset);
 	m_oceanMaterial->SetUniformValue("CoastOffset", m_oceanCoastOffset);
+	m_oceanMaterial->SetUniformValue("CoastExponent", m_oceanCoastExponent);
+	m_oceanMaterial->SetUniformValue("WaveScale", m_oceanWaveScale);
+
 	m_oceanMaterial->SetUniformValue("NormalSampleOffset", m_terrainSampleOffset);
 	
 	// fragment
@@ -244,6 +250,25 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("LightDirection", m_lightPosition);
 	
 	m_oceanMaterial->SetUniformValue("CameraPosition", m_cameraPosition);
+}
+
+void OceanApplication::ApplyPreset(int presetId)
+{
+	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture[presetId]);
+	m_oceanMaterial->SetUniformValue("Heightmap", m_heightmapTexture[presetId]);
+	switch (presetId)
+	{
+	case 0:
+		m_oceanCoastOffset = 0.2f;
+		m_oceanCoastExponent = 1.5f;
+		m_oceanWaveScale = 0.5f;
+		break;
+	case 1:
+		m_oceanCoastOffset = 0.05f;
+		m_oceanCoastExponent = 1.0f;
+		m_oceanWaveScale = 1.0f;
+		break;
+	}
 }
 
 std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
@@ -500,6 +525,7 @@ void OceanApplication::RenderGUI()
 
 	// Terrain
 	ImGui::Begin("Terrain", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	// shape/vertex
 	ImGui::DragFloat4("Bounds", &m_terrainBounds[0], 0.1f);
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("x: min x coord\ny: min y coord\nz: max x coord\nw: max z coord");
@@ -509,6 +535,7 @@ void OceanApplication::RenderGUI()
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("The sample offset used to approximate normals on the terrain and water. If this is too big, the normals become inaccurate. If it is too small, it becomes glitchy.");
 	ImGui::Separator();
+	// surface
 	ImGui::ColorEdit3("Color", &m_terrainColor[0]);
 	ImGui::DragFloat("Specular Exponent", &m_terrainSpecularExponent, 1.0f, 0.0f, 1000.0f);
 	ImGui::DragFloat("Specular Reflection", &m_terrainSpecularReflection, 0.1f, 0.0f, 1.0f);
@@ -516,16 +543,30 @@ void OceanApplication::RenderGUI()
 
 	// Ocean
 	ImGui::Begin("Ocean", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	// gerstner waves
+	ImGui::Text("Wave 1, Wave 2, Wave 3, Wave 4");
 	ImGui::DragFloat4("Wave Frequency", &m_oceanWaveFrequency[0], 0.01f);
 	ImGui::DragFloat4("Wave Speed", &m_oceanWaveSpeed[0], 0.01f);
 	ImGui::DragFloat4("Wave Width", &m_oceanWaveWidth[0], 0.01f);
 	ImGui::DragFloat4("Wave Height", &m_oceanWaveHeight[0], 0.01f);
 	ImGui::DragFloat4("Wave Direction", &m_oceanWaveDirection[0], 0.01f);
 	ImGui::Separator();
+	// general vertex settings
 	ImGui::DragFloat("Coast Offset", &m_oceanCoastOffset, 0.01f);
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("A small offset applied to the terrain height to control how close to the shore the water waves disappear.");
+	ImGui::DragFloat("Coast Exponent", &m_oceanCoastExponent, 0.01f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Applied to the depth when evaulating wave height to ease the transition from shallow to deep ocean.");
+	ImGui::DragFloat("Wave Scale", &m_oceanWaveScale, 0.01f);
+	// presets
+	ImGui::Text("Presets:");
+	ImGui::SameLine();
+	if (ImGui::Button("Default")) ApplyPreset(0);
+	ImGui::SameLine();
+	if (ImGui::Button("NoTerrain")) ApplyPreset(1);
 	ImGui::Separator();
+	// surface
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
 	ImGui::DragFloat("Specular Exponent", &m_oceanSpecularExponent, 1.0f, 0.0f, 1000.0f);
 	ImGui::DragFloat("Specular Reflection", &m_oceanSpecularReflection, 0.1f, 0.0f, 1.0f);
@@ -533,8 +574,10 @@ void OceanApplication::RenderGUI()
 
 	// Light
 	ImGui::Begin("Light", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	// ambient light
 	ImGui::ColorEdit3("Ambient Light Color", &m_lightAmbientColor[0]);
 	ImGui::Separator();
+	// directional light
 	ImGui::DragFloat3("Light Direction", &m_lightPosition[0], 0.1f);
 	ImGui::ColorEdit3("Light Color", &m_lightColor[0]);
 	ImGui::DragFloat("Light Intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
