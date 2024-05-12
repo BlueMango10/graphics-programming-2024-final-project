@@ -26,7 +26,7 @@ OceanApplication::OceanApplication()
 	, m_fragmentShaderLoader(Shader::Type::FragmentShader)
 	// Camera
 	, m_cameraPosition(10, 15, 20)
-	, m_cameraTranslationSpeed(20.0f)
+	, m_cameraTranslationSpeed(5.0f)
 	, m_cameraRotationSpeed(0.5f)
 	, m_cameraEnabled(false)
 	, m_cameraEnablePressed(false)
@@ -41,9 +41,6 @@ OceanApplication::OceanApplication()
 	, m_terrainSpecularExponent(10.0f)
 	, m_terrainSpecularReflection(0.1f)
 	// Ocean
-	, m_oceanColor(glm::vec4(1.0f))
-	, m_oceanSpecularExponent(700.0f)
-	, m_oceanSpecularReflection(1.0f)
 	, m_oceanWaveFrequency(glm::vec4(0.38f, 0.49f, 2.38f, 1.71f)) // I have found these values to work well by experimentation
 	, m_oceanWaveSpeed    (glm::vec4(1.21f, 1.42f, 1.05f, 0.61f))
 	, m_oceanWaveWidth    (glm::vec4(0.41f, 0.92f, 0.19f, 0.07f))
@@ -52,6 +49,12 @@ OceanApplication::OceanApplication()
 	, m_oceanCoastOffset(0.0f)
 	, m_oceanCoastExponent(1.0f)
 	, m_oceanWaveScale(1.0f)
+	//, m_oceanColor(glm::vec4(1.0f))
+	, m_oceanColor(glm::vec4(0.0f, 0.5f, 1.0f, 1.0f))
+	, m_oceanSpecularExponent(700.0f)
+	, m_oceanSpecularReflection(1.0f)
+	, m_oceanDetailAnimSpeed(0.07f)
+	, m_oceanDetailScale(2.0f)
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -135,7 +138,7 @@ void OceanApplication::InitializeTextures()
 	m_heightmapTexture[1] = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
 
 	// Load water texture here
-	m_oceanTexture = LoadTexture("textures/water.png");
+	m_oceanTexture = LoadTexture("textures/water_n.png");
 }
 
 void OceanApplication::InitializeMaterials()
@@ -151,10 +154,10 @@ void OceanApplication::InitializeMaterials()
 	m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 
 	// Terrain blinn-phong shader program
-	Shader terrainBPVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
-	Shader terrainBPFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
+	Shader terrainVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
+	Shader terrainFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
 	std::shared_ptr<ShaderProgram> terrainBPShaderProgram = std::make_shared<ShaderProgram>();
-	terrainBPShaderProgram->Build(terrainBPVS, terrainBPFS);
+	terrainBPShaderProgram->Build(terrainVS, terrainFS);
 
 	// Terrain blinn-phong material
 	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
@@ -165,14 +168,14 @@ void OceanApplication::InitializeMaterials()
 	
 	// Water shader
 	Shader waterVS = m_vertexShaderLoader.Load("shaders/ocean.vert");
-	Shader waterFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
+	Shader waterFS = m_fragmentShaderLoader.Load("shaders/ocean.frag");
 	std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
 	waterShaderProgram->Build(waterVS, waterFS);
 	
 	// Water material
 	m_oceanMaterial = std::make_shared<Material>(waterShaderProgram);
 	// (heightmap is set in ApplyPreset)
-	m_oceanMaterial->SetUniformValue("Albedo", m_oceanTexture);
+	m_oceanMaterial->SetUniformValue("NormalMap", m_oceanTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	m_oceanMaterial->SetBlendEquation(Material::BlendEquation::Add);
@@ -237,6 +240,9 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("CoastOffset", m_oceanCoastOffset);
 	m_oceanMaterial->SetUniformValue("CoastExponent", m_oceanCoastExponent);
 	m_oceanMaterial->SetUniformValue("WaveScale", m_oceanWaveScale);
+
+	m_oceanMaterial->SetUniformValue("DetailAnimSpeed", m_oceanDetailAnimSpeed);
+	m_oceanMaterial->SetUniformValue("DetailScale", m_oceanDetailScale);
 
 	m_oceanMaterial->SetUniformValue("NormalSampleOffset", m_terrainSampleOffset);
 	
@@ -570,6 +576,8 @@ void OceanApplication::RenderGUI()
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
 	ImGui::DragFloat("Specular Exponent", &m_oceanSpecularExponent, 1.0f, 0.0f, 1000.0f);
 	ImGui::DragFloat("Specular Reflection", &m_oceanSpecularReflection, 0.1f, 0.0f, 1.0f);
+	ImGui::DragFloat("Detail Anim Speed", &m_oceanDetailAnimSpeed, 0.01f);
+	ImGui::DragFloat("Detail Scale", &m_oceanDetailScale, 0.01f);
 	ImGui::End();
 
 	// Light
