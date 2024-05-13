@@ -16,6 +16,8 @@
 #include <numbers> // for PI constant
 #include <imgui.h>
 #include <chrono>
+#include <ituGL/asset/Texture2DLoader.h>
+#include <ituGL/asset/TextureCubemapLoader.h>
 
 OceanApplication::OceanApplication()
 	: Application(1024, 1024, "Ocean demo")
@@ -49,12 +51,12 @@ OceanApplication::OceanApplication()
 	, m_oceanCoastOffset(0.0f)
 	, m_oceanCoastExponent(1.0f)
 	, m_oceanWaveScale(1.0f)
-	//, m_oceanColor(glm::vec4(1.0f))
-	, m_oceanColor(glm::vec4(0.0f, 0.5f, 1.0f, 1.0f))
-	, m_oceanSpecularExponent(700.0f)
-	, m_oceanSpecularReflection(1.0f)
+	, m_oceanFresnelBias(0.0f)
+	, m_oceanFresnelScale(1.0f)
+	, m_oceanFresnelPower(1.0f)
 	, m_oceanDetailAnimSpeed(0.07f)
 	, m_oceanDetailScale(2.0f)
+	, m_oceanColor(glm::vec4(0.0f, 0.05f, 0.025f, 1.0f))
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -110,6 +112,9 @@ void OceanApplication::Render()
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 
+	// Skybox
+	DrawSkybox();
+
 	// Water patches
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
@@ -132,13 +137,16 @@ void OceanApplication::InitializeTextures()
 {
 	m_defaultTexture = CreateDefaultTexture();
 
-	// Load terrain textures
-    m_terrainTexture = LoadTexture("textures/dirt.png");
-	m_heightmapTexture[0] = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
-	m_heightmapTexture[1] = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
+	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/defaultCubemap.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 
-	// Load water texture here
-	m_oceanTexture = LoadTexture("textures/water_n.png");
+	// Terrain
+    m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
+
+	m_heightmapTexture[0] = Load2DTexture("textures/heightmap.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // heightmaps only really need R, but the texture files are RGBA, so we just have to roll with it
+	m_heightmapTexture[1] = Load2DTexture("textures/heightmap_flat.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
+
+	// Ocean
+	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR); // too much detail disappears when using mip maps
 }
 
 void OceanApplication::InitializeMaterials()
@@ -153,31 +161,42 @@ void OceanApplication::InitializeMaterials()
 	m_defaultMaterial = std::make_shared<Material>(defaultShaderProgram);
 	m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
 
-	// Terrain blinn-phong shader program
+	// Skybox shader (the shader used here comes from exercise 8)
+	Shader skyboxVS = m_vertexShaderLoader.Load("shaders/skybox.vert");
+	Shader skyboxFS = m_fragmentShaderLoader.Load("shaders/skybox.frag");
+	std::shared_ptr<ShaderProgram> skyboxShaderProgram = std::make_shared<ShaderProgram>();
+	skyboxShaderProgram->Build(skyboxVS, skyboxFS);
+
+	// Skybox material
+	m_skyboxMaterial = std::make_shared<Material>(skyboxShaderProgram);
+	m_skyboxMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
+
+	// Terrain shader program
 	Shader terrainVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
 	Shader terrainFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
-	std::shared_ptr<ShaderProgram> terrainBPShaderProgram = std::make_shared<ShaderProgram>();
-	terrainBPShaderProgram->Build(terrainVS, terrainFS);
+	std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
+	terrainShaderProgram->Build(terrainVS, terrainFS);
 
-	// Terrain blinn-phong material
-	m_terrainMaterial = std::make_shared<Material>(terrainBPShaderProgram);
+	// Terrain material
+	m_terrainMaterial = std::make_shared<Material>(terrainShaderProgram);
 	// (heightmap is set in ApplyPreset)
-	m_terrainMaterial->SetUniformValue("Albedo", m_terrainTexture);
+	m_terrainMaterial->SetUniformValue("ColorTexture", m_terrainTexture);
 	m_terrainMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_terrainMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	
 	// Water shader
-	Shader waterVS = m_vertexShaderLoader.Load("shaders/ocean.vert");
-	Shader waterFS = m_fragmentShaderLoader.Load("shaders/ocean.frag");
-	std::shared_ptr<ShaderProgram> waterShaderProgram = std::make_shared<ShaderProgram>();
-	waterShaderProgram->Build(waterVS, waterFS);
+	Shader oceanVS = m_vertexShaderLoader.Load("shaders/ocean.vert");
+	Shader oceanFS = m_fragmentShaderLoader.Load("shaders/ocean.frag");
+	std::shared_ptr<ShaderProgram> oceanShaderProgram = std::make_shared<ShaderProgram>();
+	oceanShaderProgram->Build(oceanVS, oceanFS);
 	
 	// Water material
-	m_oceanMaterial = std::make_shared<Material>(waterShaderProgram);
+	m_oceanMaterial = std::make_shared<Material>(oceanShaderProgram);
 	// (heightmap is set in ApplyPreset)
 	m_oceanMaterial->SetUniformValue("NormalMap", m_oceanTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
+	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
 	m_oceanMaterial->SetBlendEquation(Material::BlendEquation::Add);
 	m_oceanMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
 	
@@ -189,6 +208,7 @@ void OceanApplication::InitializeMaterials()
 void OceanApplication::InitializeMeshes()
 {
 	CreateTerrainMesh(m_terrainPatch, m_gridX, m_gridY);
+	CreateFullscreenMesh(m_fullscreenMesh);
 }
 
 void OceanApplication::UpdateUniforms()
@@ -248,8 +268,10 @@ void OceanApplication::UpdateUniforms()
 	
 	// fragment
 	m_oceanMaterial->SetUniformValue("Color", m_oceanColor);
-	m_oceanMaterial->SetUniformValue("SpecularExponent", m_oceanSpecularExponent);
-	m_oceanMaterial->SetUniformValue("SpecularReflection", m_oceanSpecularReflection);
+
+	m_oceanMaterial->SetUniformValue("FresnelBias", m_oceanFresnelBias);
+	m_oceanMaterial->SetUniformValue("FresnelScale", m_oceanFresnelScale);
+	m_oceanMaterial->SetUniformValue("FresnelPower", m_oceanFresnelPower);
 	
 	m_oceanMaterial->SetUniformValue("AmbientColor", m_lightAmbientColor);
 	m_oceanMaterial->SetUniformValue("LightColor", m_lightColor * m_lightIntensity);
@@ -302,52 +324,22 @@ std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
 	return texture;
 }
 
-std::shared_ptr<Texture2DObject> OceanApplication::LoadTexture(const char* path, GLenum wrapMode)
+std::shared_ptr<Texture2DObject> OceanApplication::Load2DTexture(const char* path, TextureObject::Format format, TextureObject::InternalFormat internalFormat, GLenum wrapMode, GLenum filter)
 {
-	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
-	int width = 0;
-	int height = 0;
-	int components = 0;
-
-	// Load the texture data here
-	unsigned char* data = stbi_load(path, &width, &height, &components, 4);
-
+	// I want to set some extra properties appart from what Texture2DLoader does which is why this function exists.
+	std::shared_ptr<Texture2DObject> texture = Texture2DLoader::LoadTextureShared(path, format, internalFormat);
+	
 	texture->Bind();
-	texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+	
 	texture->SetParameter(TextureObject::ParameterEnum::WrapS, wrapMode);
 	texture->SetParameter(TextureObject::ParameterEnum::WrapT, wrapMode);
-	texture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
-	texture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
-
-	// Generate mipmaps
-	texture->GenerateMipmap();
-
-	// Release texture data
-	stbi_image_free(data);
+	
+	texture->SetParameter(TextureObject::ParameterEnum::MagFilter, filter);
+	texture->SetParameter(TextureObject::ParameterEnum::MinFilter, filter);
+	
+	Texture2DObject::Unbind();
 
 	return texture;
-}
-
-std::shared_ptr<Texture2DObject> OceanApplication::CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords)
-{
-	std::shared_ptr<Texture2DObject> heightmap = std::make_shared<Texture2DObject>();
-	
-	std::vector<float> pixels(height * width);
-	for (unsigned int j = 0; j < height; ++j)
-	{
-		for (unsigned int i = 0; i < width; ++i)
-		{
-			float x = static_cast<float>(i) / (width - 1) + coords.x;
-			float y = static_cast<float>(j) / (height - 1) + coords.y;
-			pixels[j * width + i] = stb_perlin_fbm_noise3(x, y, 0.0f, 1.9f, 0.5f, 8) * 0.5f;
-		}
-	}
-
-	heightmap->Bind();
-	heightmap->SetImage<float>(0, width, height, TextureObject::FormatR, TextureObject::InternalFormatR16F, pixels);
-	heightmap->GenerateMipmap();
-
-	return heightmap;
 }
 
 void OceanApplication::DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix)
@@ -361,6 +353,22 @@ void OceanApplication::DrawObject(const Mesh& mesh, Material& material, const gl
 	material.GetShaderProgram()->SetUniform(locationViewProjMatrix, m_camera.GetViewProjectionMatrix());
 
 	mesh.DrawSubmesh(0);
+}
+
+void OceanApplication::DrawSkybox()
+{
+	// This is based on the code from SkyboxRenderPass::Render from the ituGL library
+
+	m_skyboxMaterial->Use();
+
+	m_skyboxMaterial->SetUniformValue("CameraPosition", m_camera.ExtractTranslation());
+	m_skyboxMaterial->SetUniformValue("InvViewProjMatrix", glm::inverse(m_camera.GetViewProjectionMatrix()));
+
+	glDepthFunc(GL_EQUAL);
+
+	m_fullscreenMesh.DrawSubmesh(0);
+
+	glDepthFunc(GL_LESS);
 }
 
 void OceanApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY)
@@ -431,6 +439,18 @@ void OceanApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigne
 		vertexFormat.LayoutBegin(static_cast<int>(vertices.size()), true /* interleaved */), vertexFormat.LayoutEnd());
 }
 
+void OceanApplication::CreateFullscreenMesh(Mesh& mesh)
+{
+	VertexFormat vertexFormat;
+	vertexFormat.AddVertexAttribute<float>(3, VertexAttribute::Semantic::Position);
+
+	std::vector<glm::vec3> vertices;
+	vertices.emplace_back(-1.0f, -1.0f, 0.0f);
+	vertices.emplace_back(3.0f, -1.0f, 0.0f);
+	vertices.emplace_back(-1.0f, 3.0f, 0.0f);
+	mesh.AddSubmesh<glm::vec3, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, vertexFormat.LayoutBegin(3, false), vertexFormat.LayoutEnd());
+}
+
 void OceanApplication::InitializeCamera()
 {
 	// Set view matrix, from the camera position looking to the origin
@@ -443,6 +463,8 @@ void OceanApplication::InitializeCamera()
 
 void OceanApplication::UpdateCamera()
 {
+	// This is based on the camera movement from exercise 5 with a few modifications (up/down movement)
+	
 	Window& window = GetMainWindow();
 
 	// Update if camera is enabled (controlled by SPACE key)
@@ -516,11 +538,8 @@ void OceanApplication::RenderGUI()
 {
 	m_imGui.BeginFrame();
 
-	bool open = true;
-	bool closed = false;
-
 	// Camera
-	ImGui::Begin("Camera", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Camera", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::DragFloat("Translation Speed", &m_cameraTranslationSpeed);
 	ImGui::DragFloat("Rotation Speed", &m_cameraRotationSpeed);
 	ImGui::Separator();
@@ -530,7 +549,7 @@ void OceanApplication::RenderGUI()
 	ImGui::End();
 
 	// Terrain
-	ImGui::Begin("Terrain", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Terrain", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	// shape/vertex
 	ImGui::DragFloat4("Bounds", &m_terrainBounds[0], 0.1f);
 	if (ImGui::IsItemHovered())
@@ -548,7 +567,7 @@ void OceanApplication::RenderGUI()
 	ImGui::End();
 
 	// Ocean
-	ImGui::Begin("Ocean", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Ocean", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	// gerstner waves
 	ImGui::Text("Wave 1, Wave 2, Wave 3, Wave 4");
 	ImGui::DragFloat4("Wave Frequency", &m_oceanWaveFrequency[0], 0.01f);
@@ -574,14 +593,17 @@ void OceanApplication::RenderGUI()
 	ImGui::Separator();
 	// surface
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
-	ImGui::DragFloat("Specular Exponent", &m_oceanSpecularExponent, 1.0f, 0.0f, 1000.0f);
-	ImGui::DragFloat("Specular Reflection", &m_oceanSpecularReflection, 0.1f, 0.0f, 1.0f);
+	ImGui::Separator();
+	ImGui::DragFloat("Fresnel Bias", &m_oceanFresnelBias, 0.01f);
+	ImGui::DragFloat("Fresnel Scale", &m_oceanFresnelScale, 0.01f);
+	ImGui::DragFloat("Fresnel Power", &m_oceanFresnelPower, 0.01f);
+	ImGui::Separator();
 	ImGui::DragFloat("Detail Anim Speed", &m_oceanDetailAnimSpeed, 0.01f);
 	ImGui::DragFloat("Detail Scale", &m_oceanDetailScale, 0.01f);
 	ImGui::End();
 
 	// Light
-	ImGui::Begin("Light", &open, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Light", NULL, ImGuiWindowFlags_AlwaysAutoResize);
 	// ambient light
 	ImGui::ColorEdit3("Ambient Light Color", &m_lightAmbientColor[0]);
 	ImGui::Separator();

@@ -10,6 +10,7 @@
 #include <glm/mat4x4.hpp>
 #include <vector>
 #include <chrono>
+#include <ituGL/texture/TextureCubemapObject.h>
 
 class Texture2DObject;
 
@@ -39,12 +40,14 @@ private:
     void RenderGUI();
 
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
+    void DrawSkybox();
 
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
     std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
-    std::shared_ptr<Texture2DObject> LoadTexture(const char* path, GLenum wrapMode = GL_REPEAT);
+    std::shared_ptr<Texture2DObject> Load2DTexture(const char* path, TextureObject::Format format, TextureObject::InternalFormat internalFormat, GLenum wrapMode, GLenum filter);
 
     void CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY);
+    void CreateFullscreenMesh(Mesh& mesh);
 
 private:
     unsigned int m_gridX, m_gridY;
@@ -65,17 +68,20 @@ private:
 
     // Meshes
     Mesh m_terrainPatch;
+    Mesh m_fullscreenMesh;
 
     // Materials
     std::shared_ptr<Material> m_defaultMaterial;
     std::shared_ptr<Material> m_terrainMaterial;
     std::shared_ptr<Material> m_oceanMaterial;
+    std::shared_ptr<Material> m_skyboxMaterial;
 
     // Textures
     std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_terrainTexture;
     std::shared_ptr<Texture2DObject> m_oceanTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture[2];
+    std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
 
 
     // GUI and misc adjustable parameters
@@ -103,11 +109,12 @@ private:
     float m_oceanCoastExponent;
     float m_oceanWaveScale;
     // fragment
-    glm::vec4 m_oceanColor;
-    float m_oceanSpecularReflection;
-    float m_oceanSpecularExponent;
     float m_oceanDetailAnimSpeed;
     float m_oceanDetailScale;
+    float m_oceanFresnelBias;
+    float m_oceanFresnelScale;
+    float m_oceanFresnelPower;
+    glm::vec4 m_oceanColor;
     
     // Light
     glm::vec3 m_lightAmbientColor;
