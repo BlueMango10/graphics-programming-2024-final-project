@@ -3,6 +3,7 @@
 in vec3 WorldPosition;
 in vec3 WorldNormal;
 in vec2 TexCoord;
+in float Depth;
 in mat3 TBN;
 
 out vec4 FragColor;
@@ -17,12 +18,12 @@ uniform sampler2D Heightmap;
 uniform vec4 HeightmapBounds; // xy = min coord, zw = max coord
 
 // surface
-uniform vec4 Color;
-uniform float AmbientReflection;
-uniform float DiffuseReflection;
-uniform float SpecularReflection;
-uniform float SpecularExponent;
 uniform sampler2D NormalMap;
+uniform samplerCube SkyboxTexture;
+uniform float FresnelBias;
+uniform float FresnelScale;
+uniform float FresnelPower;
+uniform vec4 Color;
 
 // light
 uniform vec3 AmbientColor;
@@ -54,34 +55,32 @@ vec3 getCombinedAnimatedNormal()
 	return normalize(normal);
 }
 
-vec3 ambient(vec3 color)
+float fresnel(vec3 incident, vec3 normal, float bias, float scale, float power)
 {
-	return AmbientColor * AmbientReflection * color;
-}
-
-vec3 diffuse(vec3 color, vec3 lightDirection, vec3 normal)
-{
-	return LightColor * DiffuseReflection * color * max(dot(lightDirection, normal), 0.0);
-}
-
-vec3 specular(vec3 lightDirection, vec3 viewDirection, vec3 normal)
-{
-	vec3 halfVector = normalize(lightDirection + viewDirection);
-	return LightColor * SpecularReflection * pow(max(dot(halfVector, normal), 0.0), SpecularExponent);
-}
-
-vec3 blinnPhong(vec3 color, vec3 lightDirection, vec3 viewDirection, vec3 normal)
-{
-	return ambient(color) + diffuse(color, lightDirection, normal) + specular(lightDirection, viewDirection, normal);
+	float r = bias + scale * pow(1 + dot(incident, normal), power);
+	return clamp(r, 0, 1);
 }
 
 void main()
 {
 	//vec3 color = Color.rgb * texture(NormalMap, TexCoord).rgb;
-	vec3 color = Color.rgb;
+	//vec3 color = Color.rgb;
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
+	vec3 normal = getCombinedAnimatedNormal();
 
-	FragColor = vec4(blinnPhong(color, normalize(LightDirection), viewDirection, normalize(getCombinedAnimatedNormal())), Color.a);
+	vec3 fixedViewDirection = vec3(-viewDirection.x, -viewDirection.y, viewDirection.z); // I'm not sure why the z axis is flipped. It seems correct in all other instances.
+
+	vec3 reflectedViewDirection = reflect(fixedViewDirection, normal);
+	vec4 reflectedColor = vec4(texture(SkyboxTexture, reflectedViewDirection).rgb, 1.0);
+	
+	vec3 refractedViewDirection = refract(fixedViewDirection, normal, 1.0 / 1.33);
+	vec4 refractedColor = vec4(texture(SkyboxTexture, refractedViewDirection).rgb, 1.0);
+	refractedColor = mix(Color, refractedColor, texture(Heightmap, worldToTextureCoord(WorldPosition.xz))); // Disgusting depth approximation. We actually want the scene depth here!
+	//refractedColor = Color;
+	
+	float reflectionCoefficient = fresnel(fixedViewDirection, normal, FresnelBias, FresnelScale, FresnelPower);
+
+	FragColor = mix(refractedColor, reflectedColor, reflectionCoefficient);
 
 	//FragColor = texture(Heightmap, worldToTextureCoord(WorldPosition.xz)) * Color; //debug heightmap
 	//FragColor = mix(vec4(0.5), vec4(1.0), vec4(WorldNormal, 1)); //debug normals

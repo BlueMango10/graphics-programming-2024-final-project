@@ -109,11 +109,12 @@ private:
     float m_oceanCoastExponent;
     float m_oceanWaveScale;
     // fragment
-    glm::vec4 m_oceanColor;
-    float m_oceanSpecularReflection;
-    float m_oceanSpecularExponent;
     float m_oceanDetailAnimSpeed;
     float m_oceanDetailScale;
+    float m_oceanFresnelBias;
+    float m_oceanFresnelScale;
+    float m_oceanFresnelPower;
+    glm::vec4 m_oceanColor;
     
     // Light
     glm::vec3 m_lightAmbientColor;

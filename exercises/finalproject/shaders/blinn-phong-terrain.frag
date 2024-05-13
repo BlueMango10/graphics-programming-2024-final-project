@@ -15,7 +15,7 @@ uniform float AmbientReflection;
 uniform float DiffuseReflection;
 uniform float SpecularReflection;
 uniform float SpecularExponent;
-uniform sampler2D Albedo;
+uniform sampler2D ColorTexture;
 
 // light
 uniform vec3 AmbientColor;
@@ -52,7 +52,7 @@ vec3 blinnPhong(vec3 color, vec3 lightDirection, vec3 viewDirection, vec3 normal
 
 void main()
 {
-	vec3 color = Color.rgb * texture(Albedo, TexCoord).rgb;
+	vec3 color = Color.rgb * texture(ColorTexture, TexCoord).rgb;
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
 
 	FragColor = vec4(blinnPhong(color, normalize(LightDirection), viewDirection, normalize(WorldNormal)), Color.a);

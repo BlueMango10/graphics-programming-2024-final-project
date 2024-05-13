@@ -51,12 +51,12 @@ OceanApplication::OceanApplication()
 	, m_oceanCoastOffset(0.0f)
 	, m_oceanCoastExponent(1.0f)
 	, m_oceanWaveScale(1.0f)
-	//, m_oceanColor(glm::vec4(1.0f))
-	, m_oceanColor(glm::vec4(0.0f, 0.5f, 1.0f, 1.0f))
-	, m_oceanSpecularExponent(700.0f)
-	, m_oceanSpecularReflection(1.0f)
+	, m_oceanFresnelBias(0.0f)
+	, m_oceanFresnelScale(1.0f)
+	, m_oceanFresnelPower(1.0f)
 	, m_oceanDetailAnimSpeed(0.07f)
 	, m_oceanDetailScale(2.0f)
+	, m_oceanColor(glm::vec4(0.0f, 0.05f, 0.025f, 1.0f))
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -112,14 +112,14 @@ void OceanApplication::Render()
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 
+	// Skybox
+	DrawSkybox();
+
 	// Water patches
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::translate(glm::vec3(-10.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
-
-	// Skybox
-	DrawSkybox();
 
 	// Render the debug user interface
 	RenderGUI();
@@ -137,7 +137,7 @@ void OceanApplication::InitializeTextures()
 {
 	m_defaultTexture = CreateDefaultTexture();
 
-	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/skybox.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/defaultCubemap.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 
 	// Terrain
     m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
@@ -146,7 +146,7 @@ void OceanApplication::InitializeTextures()
 	m_heightmapTexture[1] = Load2DTexture("textures/heightmap_flat.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
 
 	// Ocean
-	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR); // too much detail disappears when using mip maps
+	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR); // too much detail disappears when using mip maps
 }
 
 void OceanApplication::InitializeMaterials()
@@ -180,7 +180,7 @@ void OceanApplication::InitializeMaterials()
 	// Terrain material
 	m_terrainMaterial = std::make_shared<Material>(terrainShaderProgram);
 	// (heightmap is set in ApplyPreset)
-	m_terrainMaterial->SetUniformValue("Albedo", m_terrainTexture);
+	m_terrainMaterial->SetUniformValue("ColorTexture", m_terrainTexture);
 	m_terrainMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_terrainMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	
@@ -196,6 +196,7 @@ void OceanApplication::InitializeMaterials()
 	m_oceanMaterial->SetUniformValue("NormalMap", m_oceanTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
+	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
 	m_oceanMaterial->SetBlendEquation(Material::BlendEquation::Add);
 	m_oceanMaterial->SetBlendParams(Material::BlendParam::SourceAlpha, Material::BlendParam::OneMinusSourceAlpha);
 	
@@ -267,8 +268,10 @@ void OceanApplication::UpdateUniforms()
 	
 	// fragment
 	m_oceanMaterial->SetUniformValue("Color", m_oceanColor);
-	m_oceanMaterial->SetUniformValue("SpecularExponent", m_oceanSpecularExponent);
-	m_oceanMaterial->SetUniformValue("SpecularReflection", m_oceanSpecularReflection);
+
+	m_oceanMaterial->SetUniformValue("FresnelBias", m_oceanFresnelBias);
+	m_oceanMaterial->SetUniformValue("FresnelScale", m_oceanFresnelScale);
+	m_oceanMaterial->SetUniformValue("FresnelPower", m_oceanFresnelPower);
 	
 	m_oceanMaterial->SetUniformValue("AmbientColor", m_lightAmbientColor);
 	m_oceanMaterial->SetUniformValue("LightColor", m_lightColor * m_lightIntensity);
@@ -590,8 +593,11 @@ void OceanApplication::RenderGUI()
 	ImGui::Separator();
 	// surface
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
-	ImGui::DragFloat("Specular Exponent", &m_oceanSpecularExponent, 1.0f, 0.0f, 1000.0f);
-	ImGui::DragFloat("Specular Reflection", &m_oceanSpecularReflection, 0.1f, 0.0f, 1.0f);
+	ImGui::Separator();
+	ImGui::DragFloat("Fresnel Bias", &m_oceanFresnelBias, 0.01f);
+	ImGui::DragFloat("Fresnel Scale", &m_oceanFresnelScale, 0.01f);
+	ImGui::DragFloat("Fresnel Power", &m_oceanFresnelPower, 0.01f);
+	ImGui::Separator();
 	ImGui::DragFloat("Detail Anim Speed", &m_oceanDetailAnimSpeed, 0.01f);
 	ImGui::DragFloat("Detail Scale", &m_oceanDetailScale, 0.01f);
 	ImGui::End();
