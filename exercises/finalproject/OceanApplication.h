@@ -42,7 +42,7 @@ private:
 
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
     std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
-    std::shared_ptr<Texture2DObject> LoadTexture(const char* path, GLenum wrapMode = GL_REPEAT);
+    std::shared_ptr<Texture2DObject> Load2DTexture(const char* path, TextureObject::Format format, TextureObject::InternalFormat internalFormat, GLenum wrapMode, GLenum filter);
 
     void CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY);
 

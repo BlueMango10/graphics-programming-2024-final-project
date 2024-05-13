@@ -16,6 +16,7 @@
 #include <numbers> // for PI constant
 #include <imgui.h>
 #include <chrono>
+#include <ituGL/asset/Texture2DLoader.h>
 
 OceanApplication::OceanApplication()
 	: Application(1024, 1024, "Ocean demo")
@@ -132,13 +133,14 @@ void OceanApplication::InitializeTextures()
 {
 	m_defaultTexture = CreateDefaultTexture();
 
-	// Load terrain textures
-    m_terrainTexture = LoadTexture("textures/dirt.png");
-	m_heightmapTexture[0] = LoadTexture("textures/heightmap.png", GL_CLAMP_TO_EDGE);
-	m_heightmapTexture[1] = LoadTexture("textures/heightmap_flat.png"); // no terrain (for debugging)
+	// Terrain
+    m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 
-	// Load water texture here
-	m_oceanTexture = LoadTexture("textures/water_n.png");
+	m_heightmapTexture[0] = Load2DTexture("textures/heightmap.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // heightmaps only really need R, but the texture files are RGBA, so we just have to roll with it
+	m_heightmapTexture[1] = Load2DTexture("textures/heightmap_flat.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
+
+	// Ocean
+	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_LINEAR_MIPMAP_LINEAR, GL_LINEAR); // too much detail disappears when using mip maps
 }
 
 void OceanApplication::InitializeMaterials()
@@ -302,28 +304,20 @@ std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
 	return texture;
 }
 
-std::shared_ptr<Texture2DObject> OceanApplication::LoadTexture(const char* path, GLenum wrapMode)
+std::shared_ptr<Texture2DObject> OceanApplication::Load2DTexture(const char* path, TextureObject::Format format, TextureObject::InternalFormat internalFormat, GLenum wrapMode, GLenum filter)
 {
-	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
-	int width = 0;
-	int height = 0;
-	int components = 0;
-
-	// Load the texture data here
-	unsigned char* data = stbi_load(path, &width, &height, &components, 4);
-
+	// I want to set some extra properties appart from what Texture2DLoader does which is why this function exists.
+	std::shared_ptr<Texture2DObject> texture = Texture2DLoader::LoadTextureShared(path, format, internalFormat);
+	
 	texture->Bind();
-	texture->SetImage(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, std::span<const unsigned char>(data, width * height * 4));
+	
 	texture->SetParameter(TextureObject::ParameterEnum::WrapS, wrapMode);
 	texture->SetParameter(TextureObject::ParameterEnum::WrapT, wrapMode);
-	texture->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_LINEAR);
-	texture->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_LINEAR);
-
-	// Generate mipmaps
-	texture->GenerateMipmap();
-
-	// Release texture data
-	stbi_image_free(data);
+	
+	texture->SetParameter(TextureObject::ParameterEnum::MagFilter, filter);
+	texture->SetParameter(TextureObject::ParameterEnum::MinFilter, filter);
+	
+	Texture2DObject::Unbind();
 
 	return texture;
 }
