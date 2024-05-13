@@ -9,6 +9,7 @@ out vec3 WorldNormal;
 out vec2 TexCoord;
 out float Depth;
 out mat3 TBN;
+out vec2 TexSquish; // Basically how much the texture is squished due to wave movement
 
 // World
 uniform mat4 WorldMatrix;
@@ -78,8 +79,13 @@ vec3 getNormal(vec3 worldPosition, float sampleOffset)
 	vec3 xSample = getPosition(vec3(worldPosition.x + sampleOffset, worldPosition.yz));
 	vec3 zSample = getPosition(vec3(worldPosition.xy, worldPosition.z + sampleOffset));
 	// we then get the vectors from the base position to the two extra samples
-	vec3 tangent = normalize(xSample - baseSample);
-	vec3 biTangent = normalize(zSample - baseSample);
+	vec3 tangent = xSample - baseSample;
+	vec3 biTangent = zSample - baseSample;
+	// set texture squish
+	TexSquish = vec2(length(tangent), length(biTangent));
+	// normalize for next step (we can reuse TexSquish for an easy optimization)
+	tangent = tangent / TexSquish.x;
+	biTangent = biTangent / TexSquish.y;
 	// finally, we approximate the normal by taking the cross product of these two vectors
 	vec3 normal = normalize(cross(biTangent, tangent));
 	// before returning the final normal, we use these vectors to create a TBN vector for later use

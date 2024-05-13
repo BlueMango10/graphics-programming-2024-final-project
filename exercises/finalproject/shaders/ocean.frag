@@ -3,8 +3,8 @@
 in vec3 WorldPosition;
 in vec3 WorldNormal;
 in vec2 TexCoord;
-in float Depth;
 in mat3 TBN;
+in vec2 TexSquish; // Basically how much the texture is squished due to wave movement
 
 out vec4 FragColor;
 
@@ -19,6 +19,7 @@ uniform vec4 HeightmapBounds; // xy = min coord, zw = max coord
 
 // surface
 uniform sampler2D NormalMap;
+uniform sampler2D FoamTexture;
 uniform samplerCube SkyboxTexture;
 uniform float FresnelBias;
 uniform float FresnelScale;
@@ -63,8 +64,6 @@ float fresnel(vec3 incident, vec3 normal, float bias, float scale, float power)
 
 void main()
 {
-	//vec3 color = Color.rgb * texture(NormalMap, TexCoord).rgb;
-	//vec3 color = Color.rgb;
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
 	vec3 normal = getCombinedAnimatedNormal();
 
@@ -75,13 +74,16 @@ void main()
 	
 	vec3 refractedViewDirection = refract(fixedViewDirection, normal, 1.0 / 1.33);
 	vec4 refractedColor = vec4(texture(SkyboxTexture, refractedViewDirection).rgb, 1.0);
-	refractedColor = mix(Color, refractedColor, texture(Heightmap, worldToTextureCoord(WorldPosition.xz))); // Disgusting depth approximation. We actually want the scene depth here!
-	//refractedColor = Color;
+	// Disgusting depth approximation. We actually want the scene depth here!
+	refractedColor = mix(Color, refractedColor, texture(Heightmap, worldToTextureCoord(WorldPosition.xz)));
 	
 	float reflectionCoefficient = fresnel(fixedViewDirection, normal, FresnelBias, FresnelScale, FresnelPower);
 
 	FragColor = mix(refractedColor, reflectedColor, reflectionCoefficient);
 
-	//FragColor = texture(Heightmap, worldToTextureCoord(WorldPosition.xz)) * Color; //debug heightmap
-	//FragColor = mix(vec4(0.5), vec4(1.0), vec4(WorldNormal, 1)); //debug normals
+	// add foam
+	float totalSquish = 1-length(TexSquish);
+	vec4 white = vec4(1.0);
+	float foamyness = totalSquish - 0.75;
+	FragColor = mix(FragColor, white, clamp(pow(foamyness * 10, 1) * texture(FoamTexture, TexCoord).r, 0.0, 1.0));
 }

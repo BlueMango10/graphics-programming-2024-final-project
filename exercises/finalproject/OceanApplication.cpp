@@ -137,7 +137,7 @@ void OceanApplication::InitializeTextures()
 {
 	m_defaultTexture = CreateDefaultTexture();
 
-	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/defaultCubemap.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/skybox2dark.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 
 	// Terrain
     m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
@@ -147,6 +147,7 @@ void OceanApplication::InitializeTextures()
 
 	// Ocean
 	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR); // too much detail disappears when using mip maps
+	m_foamTexture = Load2DTexture("textures/foam.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 }
 
 void OceanApplication::InitializeMaterials()
@@ -194,6 +195,7 @@ void OceanApplication::InitializeMaterials()
 	m_oceanMaterial = std::make_shared<Material>(oceanShaderProgram);
 	// (heightmap is set in ApplyPreset)
 	m_oceanMaterial->SetUniformValue("NormalMap", m_oceanTexture);
+	m_oceanMaterial->SetUniformValue("FoamTexture", m_foamTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
