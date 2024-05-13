@@ -83,7 +83,7 @@ void main()
 
 	// add foam
 	float totalSquish = 1-length(TexSquish);
-	vec4 white = vec4(1.0);
+	vec3 foamColor = vec3(clamp(dot(normalize(LightDirection), normalize(normal)), 0.0, 1.0)) * LightColor + AmbientColor;
 	float foamyness = totalSquish - 0.75;
-	FragColor = mix(FragColor, white, clamp(pow(foamyness * 10, 1) * texture(FoamTexture, TexCoord).r, 0.0, 1.0));
+	FragColor = mix(FragColor, vec4(foamColor, 1.0), clamp(foamyness * 10 * texture(FoamTexture, TexCoord).r, 0.0, 1.0));
 }
