@@ -80,7 +80,8 @@ private:
     std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_terrainTexture;
     std::shared_ptr<Texture2DObject> m_oceanTexture;
-    std::shared_ptr<Texture2DObject> m_heightmapTexture[2];
+    std::shared_ptr<Texture2DObject> m_foamTexture;
+    std::shared_ptr<Texture2DObject> m_heightmapTexture[3];
     std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
 
 

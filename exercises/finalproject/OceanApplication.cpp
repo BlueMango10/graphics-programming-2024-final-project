@@ -137,16 +137,18 @@ void OceanApplication::InitializeTextures()
 {
 	m_defaultTexture = CreateDefaultTexture();
 
-	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/defaultCubemap.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/skybox2dark.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 
 	// Terrain
     m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 
 	m_heightmapTexture[0] = Load2DTexture("textures/heightmap.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // heightmaps only really need R, but the texture files are RGBA, so we just have to roll with it
 	m_heightmapTexture[1] = Load2DTexture("textures/heightmap_flat.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
+	m_heightmapTexture[2] = Load2DTexture("textures/heightmapIsland.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR);
 
 	// Ocean
 	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR); // too much detail disappears when using mip maps
+	m_foamTexture = Load2DTexture("textures/foam.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 }
 
 void OceanApplication::InitializeMaterials()
@@ -194,6 +196,7 @@ void OceanApplication::InitializeMaterials()
 	m_oceanMaterial = std::make_shared<Material>(oceanShaderProgram);
 	// (heightmap is set in ApplyPreset)
 	m_oceanMaterial->SetUniformValue("NormalMap", m_oceanTexture);
+	m_oceanMaterial->SetUniformValue("FoamTexture", m_foamTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
@@ -287,11 +290,19 @@ void OceanApplication::ApplyPreset(int presetId)
 	switch (presetId)
 	{
 	case 0:
+		m_terrainHeightScale = 1.5f;
 		m_oceanCoastOffset = 0.2f;
 		m_oceanCoastExponent = 1.5f;
 		m_oceanWaveScale = 0.5f;
 		break;
 	case 1:
+		m_terrainHeightScale = 1.5f;
+		m_oceanCoastOffset = 0.05f;
+		m_oceanCoastExponent = 1.0f;
+		m_oceanWaveScale = 1.0f;
+		break;
+	case 2:
+		m_terrainHeightScale = 2.0f;
 		m_oceanCoastOffset = 0.05f;
 		m_oceanCoastExponent = 1.0f;
 		m_oceanWaveScale = 1.0f;
@@ -590,6 +601,8 @@ void OceanApplication::RenderGUI()
 	if (ImGui::Button("Default")) ApplyPreset(0);
 	ImGui::SameLine();
 	if (ImGui::Button("NoTerrain")) ApplyPreset(1);
+	ImGui::SameLine();
+	if (ImGui::Button("Islands")) ApplyPreset(2);
 	ImGui::Separator();
 	// surface
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
