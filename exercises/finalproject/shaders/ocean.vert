@@ -7,7 +7,7 @@ layout (location = 2) in vec2 VertexTexCoord;
 out vec3 WorldPosition;
 out vec3 WorldNormal;
 out vec2 TexCoord;
-out float Depth;
+out float Depth; // This is the ocean depth
 out mat3 TBN;
 out vec2 TexSquish; // Basically how much the texture is squished due to wave movement
 
