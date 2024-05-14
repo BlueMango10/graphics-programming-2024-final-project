@@ -39,6 +39,7 @@ uniform vec3 LightColor;
 uniform vec3 LightDirection;
 uniform vec3 CameraPosition;
 
+// read normal from normal map and convert it to world space
 vec3 getNormalFromMap(vec2 tiling, vec2 offset)
 {
 	vec3 normal = texture(NormalMap, TexCoord * tiling + offset).rgb;
@@ -47,6 +48,8 @@ vec3 getNormalFromMap(vec2 tiling, vec2 offset)
 	return normal;
 }
 
+// combine 4 instances of the normal map scrolling in different directions at different sizes
+// this creates a nice, noisy water surface effect
 vec3 getCombinedAnimatedNormal()
 {
 	float scaledTime = Time * DetailAnimSpeed;
@@ -57,12 +60,14 @@ vec3 getCombinedAnimatedNormal()
 	return normalize(normal);
 }
 
+// fresnel
 float fresnel(vec3 incident, vec3 normal, float bias, float scale, float power)
 {
 	float r = bias + scale * pow(1 + dot(incident, normal), power);
 	return clamp(r, 0.0, 1.0);
 }
 
+// convert depth value to actual worldspace distance
 float trueDepth(float depth)
 {
 	return 2.0 * FarPlane * NearPlane / (FarPlane + NearPlane - (2.0 * depth - 1.0) * (FarPlane - NearPlane));
@@ -94,9 +99,7 @@ void main()
 	float reflectionCoefficient = fresnel(fixedViewDirection, normal, FresnelBias, FresnelScale, FresnelPower);
 
 	vec4 color = mix(Color, ColorShallow, vec4(clamp(reflectionCoefficient / 5, 0.0, 1.0)));
-
 	refractedColor = mix(refractedColor, color, clamp(vec4(depth * Murkiness), 0.0, 1.0));
-
 	FragColor = mix(refractedColor, reflectedColor, reflectionCoefficient);
 
 	// add foam
