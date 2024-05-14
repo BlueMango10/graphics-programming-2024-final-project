@@ -245,6 +245,89 @@ void OceanApplication::InitializeMeshes()
 	CreateFullscreenMesh(m_fullscreenMesh);
 }
 
+void OceanApplication::InitializeCamera()
+{
+	// Set view matrix, from the camera position looking to the origin
+	m_camera.SetViewMatrix(m_cameraPosition, glm::vec3(0.0f));
+
+	// Set perspective matrix
+	float aspectRatio = GetMainWindow().GetAspectRatio();
+	m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 1000.0f);
+}
+
+void OceanApplication::UpdateCamera()
+{
+	// This is based on the camera movement from exercise 5 with a few modifications (up/down movement)
+	
+	Window& window = GetMainWindow();
+
+	// Update if camera is enabled (controlled by SPACE key)
+	{
+		bool enablePressed = window.IsKeyPressed(GLFW_KEY_SPACE);
+		if (enablePressed && !m_cameraEnablePressed)
+		{
+			m_cameraEnabled = !m_cameraEnabled;
+
+			window.SetMouseVisible(!m_cameraEnabled);
+			m_mousePosition = window.GetMousePosition(true);
+		}
+		m_cameraEnablePressed = enablePressed;
+	}
+
+	if (!m_cameraEnabled)
+		return;
+
+	glm::mat4 viewTransposedMatrix = glm::transpose(m_camera.GetViewMatrix());
+	glm::vec3 viewRight = viewTransposedMatrix[0];
+	glm::vec3 viewUp = viewTransposedMatrix[1];
+	glm::vec3 viewForward = -viewTransposedMatrix[2];
+
+	// Update camera translation
+	{
+		glm::vec3 inputTranslation(0.0f);
+
+		if (window.IsKeyPressed(GLFW_KEY_A))
+			inputTranslation.x = -1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_D))
+			inputTranslation.x = 1.0f;
+
+		if (window.IsKeyPressed(GLFW_KEY_E))
+			inputTranslation.y = 1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_Q))
+			inputTranslation.y = -1.0f;
+
+		if (window.IsKeyPressed(GLFW_KEY_W))
+			inputTranslation.z = 1.0f;
+		else if (window.IsKeyPressed(GLFW_KEY_S))
+			inputTranslation.z = -1.0f;
+
+		inputTranslation *= m_cameraTranslationSpeed;
+		inputTranslation *= GetDeltaTime();
+
+		// Double speed if SHIFT is pressed
+		if (window.IsKeyPressed(GLFW_KEY_LEFT_SHIFT))
+			inputTranslation *= 2.0f;
+
+		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewUp + inputTranslation.z * viewForward;
+	}
+
+	// Update camera rotation
+	{
+		glm::vec2 mousePosition = window.GetMousePosition(true);
+		glm::vec2 deltaMousePosition = mousePosition - m_mousePosition;
+		m_mousePosition = mousePosition;
+
+		glm::vec3 inputRotation(-deltaMousePosition.x, deltaMousePosition.y, 0.0f);
+
+		inputRotation *= m_cameraRotationSpeed;
+
+		viewForward = glm::rotate(inputRotation.x, glm::vec3(0, 1, 0)) * glm::rotate(inputRotation.y, glm::vec3(viewRight)) * glm::vec4(viewForward, 0);
+	}
+
+	// Update view matrix
+	m_camera.SetViewMatrix(m_cameraPosition, m_cameraPosition + viewForward);
+}
+
 void OceanApplication::UpdateUniforms()
 {
 	// Terrain
@@ -371,6 +454,107 @@ std::shared_ptr<Texture2DObject> OceanApplication::Load2DTexture(const char* pat
 	return texture;
 }
 
+void OceanApplication::RenderGUI()
+{
+	m_imGui.BeginFrame();
+
+	// Camera
+	ImGui::Begin("Camera", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::DragFloat("Translation Speed", &m_cameraTranslationSpeed);
+	ImGui::DragFloat("Rotation Speed", &m_cameraRotationSpeed);
+	ImGui::Separator();
+	ImGui::Text(m_cameraEnabled
+		? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse"
+		: "Press SPACE to enable camera movement");
+	ImGui::End();
+
+	// Terrain
+	ImGui::Begin("Terrain", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	// shape/vertex
+	ImGui::DragFloat4("Bounds", &m_terrainBounds[0], 0.1f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("x: min x coord\ny: min y coord\nz: max x coord\nw: max z coord");
+	ImGui::DragFloat("Height Scale", &m_terrainHeightScale, 0.1f);
+	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset, 0.1f);
+	ImGui::DragFloat("Normal Sample Offset", &m_terrainSampleOffset, 0.01f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("The sample offset used to approximate normals on the terrain and water. If this is too big, the normals become inaccurate. If it is too small, it becomes glitchy.");
+	ImGui::Separator();
+	// surface
+	ImGui::ColorEdit3("Color", &m_terrainColor[0]);
+	ImGui::DragFloat("Specular Exponent", &m_terrainSpecularExponent, 1.0f, 0.0f, 1000.0f);
+	ImGui::DragFloat("Specular Reflection", &m_terrainSpecularReflection, 0.1f, 0.0f, 1.0f);
+	ImGui::End();
+
+	// Ocean
+	ImGui::Begin("Ocean", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	// gerstner waves
+	ImGui::Text("Wave 1, Wave 2, Wave 3, Wave 4");
+	ImGui::DragFloat4("Wave Frequency", &m_oceanWaveFrequency[0], 0.01f);
+	ImGui::DragFloat4("Wave Speed", &m_oceanWaveSpeed[0], 0.01f);
+	ImGui::DragFloat4("Wave Width", &m_oceanWaveWidth[0], 0.01f);
+	ImGui::DragFloat4("Wave Height", &m_oceanWaveHeight[0], 0.01f);
+	ImGui::DragFloat4("Wave Direction", &m_oceanWaveDirection[0], 0.01f);
+	ImGui::Separator();
+	// general vertex settings
+	ImGui::DragFloat("Coast Offset", &m_oceanCoastOffset, 0.01f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("A small offset applied to the terrain height to control how close to the shore the water waves disappear.");
+	ImGui::DragFloat("Coast Exponent", &m_oceanCoastExponent, 0.01f);
+	if (ImGui::IsItemHovered())
+		ImGui::SetTooltip("Applied to the depth when evaulating wave height to ease the transition from shallow to deep ocean.");
+	ImGui::DragFloat("Wave Scale", &m_oceanWaveScale, 0.01f);
+	ImGui::Separator();
+	// surface
+	ImGui::ColorEdit4("Color Shallow", &m_oceanColorShallow[0]);
+	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
+	ImGui::DragFloat("Color Murkiness", &m_oceanMurkiness, 0.01f);
+	ImGui::DragFloat("Fake Refraction", &m_oceanFakeRefraction, 0.01f);
+	ImGui::Separator();
+	ImGui::DragFloat("Fresnel Bias", &m_oceanFresnelBias, 0.01f);
+	ImGui::DragFloat("Fresnel Scale", &m_oceanFresnelScale, 0.01f);
+	ImGui::DragFloat("Fresnel Power", &m_oceanFresnelPower, 0.01f);
+	ImGui::Separator();
+	ImGui::DragFloat("Detail Anim Speed", &m_oceanDetailAnimSpeed, 0.01f);
+	ImGui::DragFloat("Detail Scale", &m_oceanDetailScale, 0.01f);
+	ImGui::End();
+
+	// Light
+	ImGui::Begin("Light", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	// ambient light
+	ImGui::ColorEdit3("Ambient Light Color", &m_lightAmbientColor[0]);
+	ImGui::Separator();
+	// directional light
+	ImGui::DragFloat3("Light Direction", &m_lightPosition[0], 0.1f);
+	ImGui::ColorEdit3("Light Color", &m_lightColor[0]);
+	ImGui::DragFloat("Light Intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
+	ImGui::End();
+
+	// Scene
+	ImGui::Begin("Scene", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	// terrain
+	ImGui::Text("Terrain:");
+	ImGui::SameLine();
+	if (ImGui::Button("*Default")) ApplyPreset(0);
+	ImGui::SameLine();
+	if (ImGui::Button("NoTerrain")) ApplyPreset(1);
+	ImGui::SameLine();
+	if (ImGui::Button("Islands")) ApplyPreset(2);
+	// skybox
+	ImGui::Text("Skybox:");
+	ImGui::SameLine();
+	if (ImGui::Button("*Dark")) ApplySkybox(0);
+	ImGui::SameLine();
+	if (ImGui::Button("Cloudy")) ApplySkybox(1);
+	ImGui::SameLine();
+	if (ImGui::Button("Overcast")) ApplySkybox(2);
+	ImGui::SameLine();
+	if (ImGui::Button("Light")) ApplySkybox(3);
+	ImGui::End();
+
+	m_imGui.EndFrame();
+}
+
 void OceanApplication::DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix)
 {
 	material.Use();
@@ -494,188 +678,4 @@ void OceanApplication::CreateFullscreenMesh(Mesh& mesh)
 	vertices.emplace_back(3.0f, -1.0f, 0.0f);
 	vertices.emplace_back(-1.0f, 3.0f, 0.0f);
 	mesh.AddSubmesh<glm::vec3, VertexFormat::LayoutIterator>(Drawcall::Primitive::Triangles, vertices, vertexFormat.LayoutBegin(3, false), vertexFormat.LayoutEnd());
-}
-
-void OceanApplication::InitializeCamera()
-{
-	// Set view matrix, from the camera position looking to the origin
-	m_camera.SetViewMatrix(m_cameraPosition, glm::vec3(0.0f));
-
-	// Set perspective matrix
-	float aspectRatio = GetMainWindow().GetAspectRatio();
-	m_camera.SetPerspectiveProjectionMatrix(1.0f, aspectRatio, 0.1f, 1000.0f);
-}
-
-void OceanApplication::UpdateCamera()
-{
-	// This is based on the camera movement from exercise 5 with a few modifications (up/down movement)
-	
-	Window& window = GetMainWindow();
-
-	// Update if camera is enabled (controlled by SPACE key)
-	{
-		bool enablePressed = window.IsKeyPressed(GLFW_KEY_SPACE);
-		if (enablePressed && !m_cameraEnablePressed)
-		{
-			m_cameraEnabled = !m_cameraEnabled;
-
-			window.SetMouseVisible(!m_cameraEnabled);
-			m_mousePosition = window.GetMousePosition(true);
-		}
-		m_cameraEnablePressed = enablePressed;
-	}
-
-	if (!m_cameraEnabled)
-		return;
-
-	glm::mat4 viewTransposedMatrix = glm::transpose(m_camera.GetViewMatrix());
-	glm::vec3 viewRight = viewTransposedMatrix[0];
-	glm::vec3 viewUp = viewTransposedMatrix[1];
-	glm::vec3 viewForward = -viewTransposedMatrix[2];
-
-	// Update camera translation
-	{
-		glm::vec3 inputTranslation(0.0f);
-
-		if (window.IsKeyPressed(GLFW_KEY_A))
-			inputTranslation.x = -1.0f;
-		else if (window.IsKeyPressed(GLFW_KEY_D))
-			inputTranslation.x = 1.0f;
-
-		if (window.IsKeyPressed(GLFW_KEY_E))
-			inputTranslation.y = 1.0f;
-		else if (window.IsKeyPressed(GLFW_KEY_Q))
-			inputTranslation.y = -1.0f;
-
-		if (window.IsKeyPressed(GLFW_KEY_W))
-			inputTranslation.z = 1.0f;
-		else if (window.IsKeyPressed(GLFW_KEY_S))
-			inputTranslation.z = -1.0f;
-
-		inputTranslation *= m_cameraTranslationSpeed;
-		inputTranslation *= GetDeltaTime();
-
-		// Double speed if SHIFT is pressed
-		if (window.IsKeyPressed(GLFW_KEY_LEFT_SHIFT))
-			inputTranslation *= 2.0f;
-
-		m_cameraPosition += inputTranslation.x * viewRight + inputTranslation.y * viewUp + inputTranslation.z * viewForward;
-	}
-
-	// Update camera rotation
-	{
-		glm::vec2 mousePosition = window.GetMousePosition(true);
-		glm::vec2 deltaMousePosition = mousePosition - m_mousePosition;
-		m_mousePosition = mousePosition;
-
-		glm::vec3 inputRotation(-deltaMousePosition.x, deltaMousePosition.y, 0.0f);
-
-		inputRotation *= m_cameraRotationSpeed;
-
-		viewForward = glm::rotate(inputRotation.x, glm::vec3(0, 1, 0)) * glm::rotate(inputRotation.y, glm::vec3(viewRight)) * glm::vec4(viewForward, 0);
-	}
-
-	// Update view matrix
-	m_camera.SetViewMatrix(m_cameraPosition, m_cameraPosition + viewForward);
-}
-
-void OceanApplication::RenderGUI()
-{
-	m_imGui.BeginFrame();
-
-	// Camera
-	ImGui::Begin("Camera", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	ImGui::DragFloat("Translation Speed", &m_cameraTranslationSpeed);
-	ImGui::DragFloat("Rotation Speed", &m_cameraRotationSpeed);
-	ImGui::Separator();
-	ImGui::Text(m_cameraEnabled
-		? "Press SPACE to disable camera movement\nUp: Q, Down: E\nLeft: A, Right: D\nForwards: W, Backwards: S\nRotate: Mouse"
-		: "Press SPACE to enable camera movement");
-	ImGui::End();
-
-	// Terrain
-	ImGui::Begin("Terrain", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	// shape/vertex
-	ImGui::DragFloat4("Bounds", &m_terrainBounds[0], 0.1f);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("x: min x coord\ny: min y coord\nz: max x coord\nw: max z coord");
-	ImGui::DragFloat("Height Scale", &m_terrainHeightScale, 0.1f);
-	ImGui::DragFloat("Height Offset", &m_terrainHeightOffset, 0.1f);
-	ImGui::DragFloat("Normal Sample Offset", &m_terrainSampleOffset, 0.01f);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("The sample offset used to approximate normals on the terrain and water. If this is too big, the normals become inaccurate. If it is too small, it becomes glitchy.");
-	ImGui::Separator();
-	// surface
-	ImGui::ColorEdit3("Color", &m_terrainColor[0]);
-	ImGui::DragFloat("Specular Exponent", &m_terrainSpecularExponent, 1.0f, 0.0f, 1000.0f);
-	ImGui::DragFloat("Specular Reflection", &m_terrainSpecularReflection, 0.1f, 0.0f, 1.0f);
-	ImGui::End();
-
-	// Ocean
-	ImGui::Begin("Ocean", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	// gerstner waves
-	ImGui::Text("Wave 1, Wave 2, Wave 3, Wave 4");
-	ImGui::DragFloat4("Wave Frequency", &m_oceanWaveFrequency[0], 0.01f);
-	ImGui::DragFloat4("Wave Speed", &m_oceanWaveSpeed[0], 0.01f);
-	ImGui::DragFloat4("Wave Width", &m_oceanWaveWidth[0], 0.01f);
-	ImGui::DragFloat4("Wave Height", &m_oceanWaveHeight[0], 0.01f);
-	ImGui::DragFloat4("Wave Direction", &m_oceanWaveDirection[0], 0.01f);
-	ImGui::Separator();
-	// general vertex settings
-	ImGui::DragFloat("Coast Offset", &m_oceanCoastOffset, 0.01f);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("A small offset applied to the terrain height to control how close to the shore the water waves disappear.");
-	ImGui::DragFloat("Coast Exponent", &m_oceanCoastExponent, 0.01f);
-	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("Applied to the depth when evaulating wave height to ease the transition from shallow to deep ocean.");
-	ImGui::DragFloat("Wave Scale", &m_oceanWaveScale, 0.01f);
-	ImGui::Separator();
-	// surface
-	ImGui::ColorEdit4("Color Shallow", &m_oceanColorShallow[0]);
-	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
-	ImGui::DragFloat("Color Murkiness", &m_oceanMurkiness, 0.01f);
-	ImGui::DragFloat("Fake Refraction", &m_oceanFakeRefraction, 0.01f);
-	ImGui::Separator();
-	ImGui::DragFloat("Fresnel Bias", &m_oceanFresnelBias, 0.01f);
-	ImGui::DragFloat("Fresnel Scale", &m_oceanFresnelScale, 0.01f);
-	ImGui::DragFloat("Fresnel Power", &m_oceanFresnelPower, 0.01f);
-	ImGui::Separator();
-	ImGui::DragFloat("Detail Anim Speed", &m_oceanDetailAnimSpeed, 0.01f);
-	ImGui::DragFloat("Detail Scale", &m_oceanDetailScale, 0.01f);
-	ImGui::End();
-
-	// Light
-	ImGui::Begin("Light", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	// ambient light
-	ImGui::ColorEdit3("Ambient Light Color", &m_lightAmbientColor[0]);
-	ImGui::Separator();
-	// directional light
-	ImGui::DragFloat3("Light Direction", &m_lightPosition[0], 0.1f);
-	ImGui::ColorEdit3("Light Color", &m_lightColor[0]);
-	ImGui::DragFloat("Light Intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
-	ImGui::End();
-
-	// Scene
-	ImGui::Begin("Scene", NULL, ImGuiWindowFlags_AlwaysAutoResize);
-	// terrain
-	ImGui::Text("Terrain:");
-	ImGui::SameLine();
-	if (ImGui::Button("*Default")) ApplyPreset(0);
-	ImGui::SameLine();
-	if (ImGui::Button("NoTerrain")) ApplyPreset(1);
-	ImGui::SameLine();
-	if (ImGui::Button("Islands")) ApplyPreset(2);
-	// skybox
-	ImGui::Text("Skybox:");
-	ImGui::SameLine();
-	if (ImGui::Button("*Dark")) ApplySkybox(0);
-	ImGui::SameLine();
-	if (ImGui::Button("Cloudy")) ApplySkybox(1);
-	ImGui::SameLine();
-	if (ImGui::Button("Overcast")) ApplySkybox(2);
-	ImGui::SameLine();
-	if (ImGui::Button("Light")) ApplySkybox(3);
-	ImGui::End();
-
-	m_imGui.EndFrame();
 }
