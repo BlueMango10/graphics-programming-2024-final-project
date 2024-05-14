@@ -3,7 +3,7 @@
 - `foam.png` is a modified version of `water.png` which is from exercise 4
 
 # Other textures
-- The heightmap textures are produced by me using Unity
+- The heightmap textures have been produced by me using Unity
 - The skybox textures have been obtained from https://polyhaven.com/
   - `skybox0` and `skybox3`: https://polyhaven.com/a/autumn_field_puresky
   - `skybox1`: https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
