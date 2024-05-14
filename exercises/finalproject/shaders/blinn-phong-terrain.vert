@@ -16,13 +16,13 @@ uniform float HeightScale;
 uniform float HeightOffset;
 uniform float NormalSampleOffset;
 
-// Convert world coordinates to texture coordinates
+// convert world coordinates to texture coordinates
 vec2 worldToTextureCoord(vec2 worldSpacePosition)
 {
 	return (worldSpacePosition - HeightmapBounds.xy) / (HeightmapBounds.zw - HeightmapBounds.xy);
 }
 
-// Get the final world position from the original world position
+// get the final world position from the original world position
 vec3 getPosition(vec3 worldPosition)
 {
 	worldPosition.y = texture(Heightmap, worldToTextureCoord(worldPosition.xz)).r
@@ -30,7 +30,7 @@ vec3 getPosition(vec3 worldPosition)
 	return worldPosition;
 }
 
-// Approximate normal
+// approximate normal
 vec3 getNormal(vec3 worldPosition, float sampleOffset)
 {
 	// to get the normal, we sample the height at the position and at an adjacent position on each axis

@@ -1,3 +1,10 @@
+/*
+ * This application uses exercise 4 from the course as a base. However, I have made many modifications.
+ * A lot of the original code has been removed or reworked slightly.
+ * I have "backported" some functionality from later exercises.
+ * I have also "extracted" some of the functionality of the ituGL library since I don't use the Renderer.
+ * Finally, I have of course added some of my own code, although most of my work on this project is on the shaders.
+ */
 #include "OceanApplication.h"
 
 #include <ituGL/geometry/VertexFormat.h>
@@ -135,6 +142,7 @@ void OceanApplication::Cleanup()
 
 void OceanApplication::InitializeTextures()
 {
+	// Skyboxes
 	m_skyboxTexture[0] = TextureCubemapLoader::LoadTextureShared("textures/skybox0.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 	m_skyboxTexture[1] = TextureCubemapLoader::LoadTextureShared("textures/skybox1.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 	m_skyboxTexture[2] = TextureCubemapLoader::LoadTextureShared("textures/skybox2.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
@@ -143,6 +151,7 @@ void OceanApplication::InitializeTextures()
 	// Terrain
     m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 
+	// Heightmaps
 	m_heightmapTexture[0] = Load2DTexture("textures/heightmap0.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // heightmaps only really need R, but the texture files are RGBA, so we just have to roll with it
 	m_heightmapTexture[1] = Load2DTexture("textures/heightmap1.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
 	m_heightmapTexture[2] = Load2DTexture("textures/heightmap2.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR);
@@ -151,27 +160,24 @@ void OceanApplication::InitializeTextures()
 	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR); // too much detail disappears when using mip maps
 	m_foamTexture = Load2DTexture("textures/foam.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 
-	// Frame buffers
+	// Framebuffers (this re-implements what happens in GBufferRenderPass from ituGL)
 	Window& window = GetMainWindow();
 	int width, height;
 	window.GetDimensions(width, height);
-
+	// color
 	m_fbBeforeWaterColor = std::make_shared<Texture2DObject>();
 	m_fbBeforeWaterColor->Bind();
 	m_fbBeforeWaterColor->SetImage(0, width, height, TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 	m_fbBeforeWaterColor->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
 	m_fbBeforeWaterColor->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
-	m_fbBeforeWaterColor->GenerateMipmap();
-	
+	// depth
 	m_fbBeforeWaterDepth = std::make_shared<Texture2DObject>();
 	m_fbBeforeWaterDepth->Bind();
 	m_fbBeforeWaterDepth->SetImage(0, width, height, TextureObject::FormatDepth, TextureObject::InternalFormatDepth);
 	m_fbBeforeWaterDepth->SetParameter(TextureObject::ParameterEnum::MinFilter, GL_NEAREST);
 	m_fbBeforeWaterDepth->SetParameter(TextureObject::ParameterEnum::MagFilter, GL_NEAREST);
-	m_fbBeforeWaterDepth->GenerateMipmap();
-
 	Texture2DObject::Unbind();
-
+	// bramebuffer
 	m_fbBeforeWater = std::make_shared<FramebufferObject>();
 	m_fbBeforeWater->Bind();
 	m_fbBeforeWater->SetTexture(FramebufferObject::Target::Both, FramebufferObject::Attachment::Color0, *m_fbBeforeWaterColor);
@@ -185,7 +191,8 @@ void OceanApplication::InitializeTextures()
 
 void OceanApplication::InitializeMaterials()
 {
-	// Skybox shader (the shader used here comes from exercise 8)
+	// Skybox shader
+	// (the shader used here comes from exercise 8)
 	Shader skyboxVS = m_vertexShaderLoader.Load("shaders/skybox.vert");
 	Shader skyboxFS = m_fragmentShaderLoader.Load("shaders/skybox.frag");
 	std::shared_ptr<ShaderProgram> skyboxShaderProgram = std::make_shared<ShaderProgram>();
@@ -193,9 +200,12 @@ void OceanApplication::InitializeMaterials()
 
 	// Skybox material
 	m_skyboxMaterial = std::make_shared<Material>(skyboxShaderProgram);
-	// (skybox is set in ApplySkybox)
+	// (SkyboxTexture is set in ApplySkybox)
+
 
 	// Terrain shader program
+	// (the fragment shader is heavily based on the one from exercise 5, but the
+	// vertex shader is different since I need to calculate normals)
 	Shader terrainVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
 	Shader terrainFS = m_fragmentShaderLoader.Load("shaders/blinn-phong-terrain.frag");
 	std::shared_ptr<ShaderProgram> terrainShaderProgram = std::make_shared<ShaderProgram>();
@@ -203,11 +213,12 @@ void OceanApplication::InitializeMaterials()
 
 	// Terrain material
 	m_terrainMaterial = std::make_shared<Material>(terrainShaderProgram);
-	// (heightmap is set in ApplyPreset)
+	// (Heightmap is set in ApplyPreset)
 	m_terrainMaterial->SetUniformValue("ColorTexture", m_terrainTexture);
 	m_terrainMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_terrainMaterial->SetUniformValue("DiffuseReflection", 1.0f);
 	
+
 	// Ocean shader
 	Shader oceanVS = m_vertexShaderLoader.Load("shaders/ocean.vert");
 	Shader oceanFS = m_fragmentShaderLoader.Load("shaders/ocean.frag");
@@ -216,14 +227,15 @@ void OceanApplication::InitializeMaterials()
 	
 	// Ocean material
 	m_oceanMaterial = std::make_shared<Material>(oceanShaderProgram);
-	// (heightmap is set in ApplyPreset)
+	// (Heightmap is set in ApplyPreset)
 	m_oceanMaterial->SetUniformValue("NormalMap", m_oceanTexture);
 	m_oceanMaterial->SetUniformValue("FoamTexture", m_foamTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
-	// (skybox is set in ApplySkybox)
+	// (SkyboxTexture is set in ApplySkybox)
 
-	// render buffer stuff for water
+
+	// Renderbuffer stuff for water
 	m_oceanMaterial->SetUniformValue("SceneColor", m_fbBeforeWaterColor);
 	m_oceanMaterial->SetUniformValue("SceneDepth", m_fbBeforeWaterDepth);
 
@@ -405,8 +417,10 @@ void OceanApplication::UpdateUniforms()
 
 void OceanApplication::ApplyPreset(int presetId)
 {
+	// change the heightmap texture
 	m_terrainMaterial->SetUniformValue("Heightmap", m_heightmapTexture[presetId]);
 	m_oceanMaterial->SetUniformValue("Heightmap", m_heightmapTexture[presetId]);
+	// change some uniforms to work better with the selected terrain
 	switch (presetId)
 	{
 	case 0:
@@ -557,6 +571,8 @@ void OceanApplication::RenderGUI()
 
 void OceanApplication::DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix)
 {
+	// This has not been changed from exercise 4
+
 	material.Use();
 
 	ShaderProgram& shaderProgram = *material.GetShaderProgram();
@@ -570,6 +586,7 @@ void OceanApplication::DrawObject(const Mesh& mesh, Material& material, const gl
 
 void OceanApplication::DrawTerrain()
 {
+	// Draw terrain meshes
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_terrainMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
@@ -578,6 +595,7 @@ void OceanApplication::DrawTerrain()
 
 void OceanApplication::DrawOcean()
 {
+	// Draw ocean meshes
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::translate(glm::vec3(-10.f, 0.0f, 0.0f)) * glm::scale(glm::vec3(10.0f)));
 	DrawObject(m_terrainPatch, *m_oceanMaterial, glm::translate(glm::vec3(0.f, 0.0f, -10.0f)) * glm::scale(glm::vec3(10.0f)));
@@ -586,7 +604,7 @@ void OceanApplication::DrawOcean()
 
 void OceanApplication::DrawSkybox()
 {
-	// This is based on the code from SkyboxRenderPass::Render from the ituGL library
+	// This is based on the code from SkyboxRenderPass::Render from the ituGL
 
 	m_skyboxMaterial->Use();
 
@@ -602,6 +620,8 @@ void OceanApplication::DrawSkybox()
 
 void OceanApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigned int gridY)
 {
+	// This has not been changed from exercise 4
+
 	// Define the vertex structure
 	struct Vertex
 	{
@@ -670,6 +690,8 @@ void OceanApplication::CreateTerrainMesh(Mesh& mesh, unsigned int gridX, unsigne
 
 void OceanApplication::CreateFullscreenMesh(Mesh& mesh)
 {
+	// This is based on the code from Renderer::InitializeFullscreenMesh from the ituGL
+
 	VertexFormat vertexFormat;
 	vertexFormat.AddVertexAttribute<float>(3, VertexAttribute::Semantic::Position);
 
