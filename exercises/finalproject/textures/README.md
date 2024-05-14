@@ -8,3 +8,4 @@
   - `skybox0` and `skybox3`: https://polyhaven.com/a/autumn_field_puresky
   - `skybox1`: https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
   - `skybox2`: https://polyhaven.com/a/overcast_soil_puresky
+- `water_n` have been obtained from https://textures.pixel-furnace.com/ (specifically: https://textures.pixel-furnace.com/texture?name=Animated%20Water)
