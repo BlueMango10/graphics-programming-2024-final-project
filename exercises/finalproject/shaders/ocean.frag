@@ -29,6 +29,7 @@ uniform float FresnelPower;
 uniform vec4 Color;
 uniform vec4 ColorShallow;
 uniform float Murkiness;
+uniform float FakeRefraction;
 uniform sampler2D SceneColor;
 uniform sampler2D SceneDepth;
 uniform float NearPlane;
@@ -81,18 +82,22 @@ void main()
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
 	vec3 normal = getCombinedAnimatedNormal();
 
-	vec3 fixedViewDirection = vec3(-viewDirection.x, -viewDirection.y, viewDirection.z); // I'm not sure why the z axis is flipped. It seems correct in all other instances.
+	vec3 fixedViewDirection = vec3(-viewDirection.x, -viewDirection.y, viewDirection.z); // I'm not sure why the z axis is flipped. It seems correct in all other cases.
 
 	vec3 reflectedViewDirection = reflect(fixedViewDirection, normal);
 	vec4 reflectedColor = vec4(texture(SkyboxTexture, reflectedViewDirection).rgb, 1.0);
 	
+	/* skybox refraction. this is not used.
 	vec3 refractedViewDirection = refract(fixedViewDirection, normal, 1.0 / 1.33);
 	vec4 refractedColor = vec4(texture(SkyboxTexture, refractedViewDirection).rgb, 1.0);
-	refractedColor = vec4(texture(SceneColor, screenPosition));
+	*/
 	
 	float waterDepth = trueDepth(gl_FragCoord.z);
 	float sceneDepth = trueDepth(texture(SceneDepth, screenPosition.xy).r);
 	float depth = sceneDepth - waterDepth;
+
+	// simple normal-based wobble to give the apperance of refraction without doing actual refraction
+	vec4 refractedColor = vec4(texture(SceneColor, screenPosition + normal.xz * FakeRefraction * depth));
 	
 	float reflectionCoefficient = fresnel(fixedViewDirection, normal, FresnelBias, FresnelScale, FresnelPower);
 

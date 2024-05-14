@@ -126,6 +126,7 @@ private:
     glm::vec4 m_oceanColorShallow;
     glm::vec4 m_oceanColor;
     float m_oceanMurkiness;
+    float m_oceanFakeRefraction;
     
     // Light
     glm::vec3 m_lightAmbientColor;

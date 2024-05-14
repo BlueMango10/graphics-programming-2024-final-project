@@ -44,9 +44,9 @@ OceanApplication::OceanApplication()
 	, m_terrainSpecularReflection(0.1f)
 	// Ocean
 	, m_oceanWaveFrequency(glm::vec4(0.38f, 0.49f, 2.38f, 1.71f)) // I have found these values to work well by experimentation
-	, m_oceanWaveSpeed    (glm::vec4(1.21f, 1.42f, 1.05f, 0.61f))
-	, m_oceanWaveWidth    (glm::vec4(0.41f, 0.92f, 0.19f, 0.07f))
-	, m_oceanWaveHeight   (glm::vec4(0.40f, 0.24f, 0.03f, 0.08f))
+	, m_oceanWaveSpeed(glm::vec4(1.21f, 1.42f, 1.05f, 0.61f))
+	, m_oceanWaveWidth(glm::vec4(0.41f, 0.92f, 0.19f, 0.07f))
+	, m_oceanWaveHeight(glm::vec4(0.40f, 0.24f, 0.03f, 0.08f))
 	, m_oceanWaveDirection(glm::vec4(2.52f, 3.89f, 3.54f, 2.68f))
 	, m_oceanCoastOffset(0.0f)
 	, m_oceanCoastExponent(1.0f)
@@ -59,6 +59,7 @@ OceanApplication::OceanApplication()
 	, m_oceanColorShallow(glm::vec4(0.0f, 0.4f, 0.2f, 1.0f))
 	, m_oceanColor(glm::vec4(0.0f, 0.05f, 0.025f, 1.0f))
 	, m_oceanMurkiness(2.5f)
+	, m_oceanFakeRefraction(0.5f)
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -314,6 +315,7 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("ColorShallow", m_oceanColorShallow);
 	m_oceanMaterial->SetUniformValue("Color", m_oceanColor);
 	m_oceanMaterial->SetUniformValue("Murkiness", m_oceanMurkiness);
+	m_oceanMaterial->SetUniformValue("FakeRefraction", m_oceanFakeRefraction);
 
 	m_oceanMaterial->SetUniformValue("FresnelBias", m_oceanFresnelBias);
 	m_oceanMaterial->SetUniformValue("FresnelScale", m_oceanFresnelScale);
@@ -670,6 +672,7 @@ void OceanApplication::RenderGUI()
 	ImGui::ColorEdit4("Color Shallow", &m_oceanColorShallow[0]);
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
 	ImGui::DragFloat("Color Murkiness", &m_oceanMurkiness, 0.01f);
+	ImGui::DragFloat("Fake Refraction", &m_oceanFakeRefraction, 0.01f);
 	ImGui::Separator();
 	ImGui::DragFloat("Fresnel Bias", &m_oceanFresnelBias, 0.01f);
 	ImGui::DragFloat("Fresnel Scale", &m_oceanFresnelScale, 0.01f);
