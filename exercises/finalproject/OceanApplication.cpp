@@ -75,14 +75,12 @@ void OceanApplication::Initialize()
 	// Initialize DearImGUI
 	m_imGui.Initialize(GetMainWindow());
 
-	// Build textures and keep them in a list
+	// Initialize scene content
 	InitializeTextures();
-	// Build materials and keep them in a list
 	InitializeMaterials();
-	// Build meshes and keep them in a list
 	InitializeMeshes();
 
-	// Initialize Camera
+	// Initialize camera
 	InitializeCamera();
 
 	// Enable depth test
@@ -140,14 +138,17 @@ void OceanApplication::InitializeTextures()
 {
 	m_defaultTexture = CreateDefaultTexture();
 
-	m_skyboxTexture = TextureCubemapLoader::LoadTextureShared("textures/skybox2dark.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture[0] = TextureCubemapLoader::LoadTextureShared("textures/skybox0.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture[1] = TextureCubemapLoader::LoadTextureShared("textures/skybox1.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture[2] = TextureCubemapLoader::LoadTextureShared("textures/skybox2.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
+	m_skyboxTexture[3] = TextureCubemapLoader::LoadTextureShared("textures/skybox3.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 
 	// Terrain
     m_terrainTexture = Load2DTexture("textures/dirt.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR);
 
-	m_heightmapTexture[0] = Load2DTexture("textures/heightmap.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // heightmaps only really need R, but the texture files are RGBA, so we just have to roll with it
-	m_heightmapTexture[1] = Load2DTexture("textures/heightmap_flat.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
-	m_heightmapTexture[2] = Load2DTexture("textures/heightmapIsland.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR);
+	m_heightmapTexture[0] = Load2DTexture("textures/heightmap0.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // heightmaps only really need R, but the texture files are RGBA, so we just have to roll with it
+	m_heightmapTexture[1] = Load2DTexture("textures/heightmap1.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR); // no terrain (for debugging)
+	m_heightmapTexture[2] = Load2DTexture("textures/heightmap2.png", TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, GL_CLAMP_TO_EDGE, GL_LINEAR);
 
 	// Ocean
 	m_oceanTexture = Load2DTexture("textures/water_n.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB, GL_REPEAT, GL_LINEAR_MIPMAP_LINEAR); // too much detail disappears when using mip maps
@@ -205,7 +206,7 @@ void OceanApplication::InitializeMaterials()
 
 	// Skybox material
 	m_skyboxMaterial = std::make_shared<Material>(skyboxShaderProgram);
-	m_skyboxMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
+	// (skybox is set in ApplySkybox)
 
 	// Terrain shader program
 	Shader terrainVS = m_vertexShaderLoader.Load("shaders/blinn-phong-terrain.vert");
@@ -233,7 +234,7 @@ void OceanApplication::InitializeMaterials()
 	m_oceanMaterial->SetUniformValue("FoamTexture", m_foamTexture);
 	m_oceanMaterial->SetUniformValue("AmbientReflection", 1.0f);
 	m_oceanMaterial->SetUniformValue("DiffuseReflection", 1.0f);
-	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture);
+	// (skybox is set in ApplySkybox)
 
 	// render buffer stuff for water
 	m_oceanMaterial->SetUniformValue("SceneColor", m_fbBeforeWaterColor);
@@ -245,8 +246,9 @@ void OceanApplication::InitializeMaterials()
 
 	m_oceanMaterial->SetUniformValue("Resolution", glm::vec2(width, height));
 
-	// Initial call to ApplyPreset and UpdateUniforms to initialize the uniform values
+	// Initial call to ApplyPreset, ApplySkybox and UpdateUniforms to initialize the uniform values
 	ApplyPreset(0);
+	ApplySkybox(0);
 	UpdateUniforms();
 }
 
@@ -356,6 +358,12 @@ void OceanApplication::ApplyPreset(int presetId)
 		m_oceanWaveScale = 1.0f;
 		break;
 	}
+}
+
+void OceanApplication::ApplySkybox(int skyboxId)
+{
+	m_skyboxMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture[skyboxId]);
+	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture[skyboxId]);
 }
 
 std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
@@ -659,14 +667,6 @@ void OceanApplication::RenderGUI()
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip("Applied to the depth when evaulating wave height to ease the transition from shallow to deep ocean.");
 	ImGui::DragFloat("Wave Scale", &m_oceanWaveScale, 0.01f);
-	// presets
-	ImGui::Text("Presets:");
-	ImGui::SameLine();
-	if (ImGui::Button("Default")) ApplyPreset(0);
-	ImGui::SameLine();
-	if (ImGui::Button("NoTerrain")) ApplyPreset(1);
-	ImGui::SameLine();
-	if (ImGui::Button("Islands")) ApplyPreset(2);
 	ImGui::Separator();
 	// surface
 	ImGui::ColorEdit4("Color Shallow", &m_oceanColorShallow[0]);
@@ -691,6 +691,28 @@ void OceanApplication::RenderGUI()
 	ImGui::DragFloat3("Light Direction", &m_lightPosition[0], 0.1f);
 	ImGui::ColorEdit3("Light Color", &m_lightColor[0]);
 	ImGui::DragFloat("Light Intensity", &m_lightIntensity, 0.05f, 0.0f, 100.0f);
+	ImGui::End();
+
+	// Scene
+	ImGui::Begin("Scene", NULL, ImGuiWindowFlags_AlwaysAutoResize);
+	// terrain
+	ImGui::Text("Terrain:");
+	ImGui::SameLine();
+	if (ImGui::Button("*Default")) ApplyPreset(0);
+	ImGui::SameLine();
+	if (ImGui::Button("NoTerrain")) ApplyPreset(1);
+	ImGui::SameLine();
+	if (ImGui::Button("Islands")) ApplyPreset(2);
+	// skybox
+	ImGui::Text("Skybox:");
+	ImGui::SameLine();
+	if (ImGui::Button("*Dark")) ApplySkybox(0);
+	ImGui::SameLine();
+	if (ImGui::Button("Cloudy")) ApplySkybox(1);
+	ImGui::SameLine();
+	if (ImGui::Button("Overcast")) ApplySkybox(2);
+	ImGui::SameLine();
+	if (ImGui::Button("Light")) ApplySkybox(3);
 	ImGui::End();
 
 	m_imGui.EndFrame();

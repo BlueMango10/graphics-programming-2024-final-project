@@ -37,6 +37,8 @@ private:
     void UpdateUniforms();
     // Update configurable values and change terrain
     void ApplyPreset(int presetId);
+    // Update skybox
+    void ApplySkybox(int skyboxId);
 
     void RenderGUI();
 
@@ -85,7 +87,7 @@ private:
     std::shared_ptr<Texture2DObject> m_oceanTexture;
     std::shared_ptr<Texture2DObject> m_foamTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture[3];
-    std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
+    std::shared_ptr<TextureCubemapObject> m_skyboxTexture[4];
 
     // Before Water Framebuffer
     std::shared_ptr<FramebufferObject> m_fbBeforeWater;
