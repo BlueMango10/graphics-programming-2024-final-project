@@ -10,17 +10,13 @@ out vec4 FragColor;
 
 uniform vec2 Resolution;
 
-// Water
+// normals
 uniform float Time;
 uniform float DetailAnimSpeed;
 uniform float DetailScale;
-
-// Terrain info
-uniform sampler2D Heightmap;
-uniform vec4 HeightmapBounds; // xy = min coord, zw = max coord
+uniform sampler2D NormalMap;
 
 // surface
-uniform sampler2D NormalMap;
 uniform sampler2D FoamTexture;
 uniform samplerCube SkyboxTexture;
 uniform float FresnelBias;
@@ -30,22 +26,18 @@ uniform vec4 Color;
 uniform vec4 ColorShallow;
 uniform float Murkiness;
 uniform float FakeRefraction;
+
+// scene/camera
 uniform sampler2D SceneColor;
 uniform sampler2D SceneDepth;
 uniform float NearPlane;
 uniform float FarPlane;
 
-// light
+// light (this is used for foam)
 uniform vec3 AmbientColor;
 uniform vec3 LightColor;
 uniform vec3 LightDirection;
 uniform vec3 CameraPosition;
-
-// Convert world coordinates to texture coordinates
-vec2 worldToTextureCoord(vec2 worldSpacePosition)
-{
-	return (worldSpacePosition - HeightmapBounds.xy) / (HeightmapBounds.zw - HeightmapBounds.xy);
-}
 
 vec3 getNormalFromMap(vec2 tiling, vec2 offset)
 {

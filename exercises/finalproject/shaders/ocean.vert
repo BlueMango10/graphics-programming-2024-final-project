@@ -7,22 +7,21 @@ layout (location = 2) in vec2 VertexTexCoord;
 out vec3 WorldPosition;
 out vec3 WorldNormal;
 out vec2 TexCoord;
-out float Depth; // This is the ocean depth
 out mat3 TBN;
 out vec2 TexSquish; // Basically how much the texture is squished due to wave movement
 
-// World
+// world
 uniform mat4 WorldMatrix;
 uniform mat4 ViewProjMatrix;
 uniform float Time;
 
-// Terrain info
+// terrain info
 uniform sampler2D Heightmap;
 uniform vec4 HeightmapBounds; // xy = min coord, zw = max coord
 uniform float HeightScale;
 uniform float HeightOffset;
 
-// Shape
+// shape
 uniform vec4 WaveFrequency;
 uniform vec4 WaveSpeed;
 uniform vec4 WaveDirectionX; // I pass the direction uniform this way to better group thing together in the c++ code.
@@ -33,16 +32,16 @@ uniform float CoastOffset;
 uniform float CoastExponent;
 uniform float WaveScale;
 
-// Shading
+// shading
 uniform float NormalSampleOffset;
 
-// Convert world coordinates to texture coordinates
+// convert world coordinates to texture coordinates
 vec2 worldToTextureCoord(vec2 worldSpacePosition)
 {
 	return (worldSpacePosition - HeightmapBounds.xy) / (HeightmapBounds.zw - HeightmapBounds.xy);
 }
 
-// Get depth
+// get depth
 float getDepth(vec3 worldPosition)
 {
 	float height = texture(Heightmap, worldToTextureCoord(worldPosition.xz)).r
@@ -50,7 +49,7 @@ float getDepth(vec3 worldPosition)
 	return -height;
 }
 
-// Get vertex offset produced by a Gerstner wave
+// get vertex offset produced by a Gerstner wave
 vec3 gerstnerWave(vec3 worldPosition, float speed, float frequency, float height, float width, vec2 direction)
 {
 	float waveTime = (((worldPosition.x * direction.x) + (worldPosition.z * direction.y) + (Time * speed)) * frequency);
@@ -59,10 +58,10 @@ vec3 gerstnerWave(vec3 worldPosition, float speed, float frequency, float height
 	return offset;
 }
 
-// Get the final world position from the original world position
+// get the final world position from the original world position
 vec3 getPosition(vec3 worldPosition)
 {
-	float waveScale = max(0, Depth + CoastOffset);
+	float waveScale = max(0, getDepth(worldPosition) + CoastOffset);
 	waveScale = min(waveScale, pow(waveScale, CoastExponent));
 	vec3 wave = gerstnerWave(worldPosition, WaveSpeed.x, WaveFrequency.x, WaveHeight.x, WaveWidth.x, vec2(WaveDirectionX.x, WaveDirectionY.x));
 	wave += gerstnerWave(worldPosition, WaveSpeed.y, WaveFrequency.y, WaveHeight.y, WaveWidth.y, vec2(WaveDirectionX.y, WaveDirectionY.y));
@@ -71,7 +70,7 @@ vec3 getPosition(vec3 worldPosition)
 	return worldPosition + wave * waveScale * WaveScale;
 }
 
-// Approximate normal
+// approximate normal
 vec3 getNormal(vec3 worldPosition, float sampleOffset)
 {
 	// to get the normal, we sample the height at the position and at an adjacent position on each axis
@@ -102,7 +101,6 @@ void main()
 	TexCoord = WorldPosition.xz;
 
 	// position
-	Depth = getDepth(WorldPosition);
 	WorldPosition = getPosition(WorldPosition);
 
 	// normal
