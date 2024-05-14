@@ -123,7 +123,9 @@ private:
     float m_oceanFresnelBias;
     float m_oceanFresnelScale;
     float m_oceanFresnelPower;
+    glm::vec4 m_oceanColorShallow;
     glm::vec4 m_oceanColor;
+    float m_oceanMurkiness;
     
     // Light
     glm::vec3 m_lightAmbientColor;

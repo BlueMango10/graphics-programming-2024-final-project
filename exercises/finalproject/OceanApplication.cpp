@@ -56,7 +56,9 @@ OceanApplication::OceanApplication()
 	, m_oceanFresnelPower(1.0f)
 	, m_oceanDetailAnimSpeed(0.07f)
 	, m_oceanDetailScale(2.0f)
+	, m_oceanColorShallow(glm::vec4(0.0f, 0.4f, 0.2f, 1.0f))
 	, m_oceanColor(glm::vec4(0.0f, 0.05f, 0.025f, 1.0f))
+	, m_oceanMurkiness(2.5f)
 	// Light
 	, m_lightAmbientColor(glm::vec3(0.10f, 0.10f, 0.12f))
 	, m_lightColor(1.0f)
@@ -309,7 +311,9 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("NormalSampleOffset", m_terrainSampleOffset);
 	
 	// fragment
+	m_oceanMaterial->SetUniformValue("ColorShallow", m_oceanColorShallow);
 	m_oceanMaterial->SetUniformValue("Color", m_oceanColor);
+	m_oceanMaterial->SetUniformValue("Murkiness", m_oceanMurkiness);
 
 	m_oceanMaterial->SetUniformValue("FresnelBias", m_oceanFresnelBias);
 	m_oceanMaterial->SetUniformValue("FresnelScale", m_oceanFresnelScale);
@@ -320,6 +324,9 @@ void OceanApplication::UpdateUniforms()
 	m_oceanMaterial->SetUniformValue("LightDirection", m_lightPosition);
 	
 	m_oceanMaterial->SetUniformValue("CameraPosition", m_cameraPosition);
+
+	m_oceanMaterial->SetUniformValue("NearPlane", 0.1f);
+	m_oceanMaterial->SetUniformValue("FarPlane", 1000.0f);
 }
 
 void OceanApplication::ApplyPreset(int presetId)
@@ -660,7 +667,9 @@ void OceanApplication::RenderGUI()
 	if (ImGui::Button("Islands")) ApplyPreset(2);
 	ImGui::Separator();
 	// surface
+	ImGui::ColorEdit4("Color Shallow", &m_oceanColorShallow[0]);
 	ImGui::ColorEdit4("Color", &m_oceanColor[0]);
+	ImGui::DragFloat("Color Murkiness", &m_oceanMurkiness, 0.01f);
 	ImGui::Separator();
 	ImGui::DragFloat("Fresnel Bias", &m_oceanFresnelBias, 0.01f);
 	ImGui::DragFloat("Fresnel Scale", &m_oceanFresnelScale, 0.01f);
