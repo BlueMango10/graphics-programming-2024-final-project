@@ -13,7 +13,6 @@
 
 #include <cmath>
 #include <iostream>
-#include <numbers> // for PI constant
 #include <imgui.h>
 #include <chrono>
 #include <ituGL/asset/Texture2DLoader.h>
@@ -136,8 +135,6 @@ void OceanApplication::Cleanup()
 
 void OceanApplication::InitializeTextures()
 {
-	m_defaultTexture = CreateDefaultTexture();
-
 	m_skyboxTexture[0] = TextureCubemapLoader::LoadTextureShared("textures/skybox0.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 	m_skyboxTexture[1] = TextureCubemapLoader::LoadTextureShared("textures/skybox1.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
 	m_skyboxTexture[2] = TextureCubemapLoader::LoadTextureShared("textures/skybox2.png", TextureObject::FormatRGB, TextureObject::InternalFormatRGB);
@@ -188,16 +185,6 @@ void OceanApplication::InitializeTextures()
 
 void OceanApplication::InitializeMaterials()
 {
-	// Default shader program
-	Shader defaultVS = m_vertexShaderLoader.Load("shaders/default.vert");
-	Shader defaultFS = m_fragmentShaderLoader.Load("shaders/default.frag");
-	std::shared_ptr<ShaderProgram> defaultShaderProgram = std::make_shared<ShaderProgram>();
-	defaultShaderProgram->Build(defaultVS, defaultFS);
-
-	// Default material
-	m_defaultMaterial = std::make_shared<Material>(defaultShaderProgram);
-	m_defaultMaterial->SetUniformValue("Color", glm::vec4(1.0f));
-
 	// Skybox shader (the shader used here comes from exercise 8)
 	Shader skyboxVS = m_vertexShaderLoader.Load("shaders/skybox.vert");
 	Shader skyboxFS = m_fragmentShaderLoader.Load("shaders/skybox.frag");
@@ -364,31 +351,6 @@ void OceanApplication::ApplySkybox(int skyboxId)
 {
 	m_skyboxMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture[skyboxId]);
 	m_oceanMaterial->SetUniformValue("SkyboxTexture", m_skyboxTexture[skyboxId]);
-}
-
-std::shared_ptr<Texture2DObject> OceanApplication::CreateDefaultTexture()
-{
-	std::shared_ptr<Texture2DObject> texture = std::make_shared<Texture2DObject>();
-
-	int width = 4;
-	int height = 4;
-	std::vector<float> pixels;
-	for (int j = 0; j < height; ++j)
-	{
-		for (int i = 0; i < width; ++i)
-		{
-			pixels.push_back(1.0f);
-			pixels.push_back(0.0f);
-			pixels.push_back(1.0f);
-			pixels.push_back(1.0f);
-		}
-	}
-
-	texture->Bind();
-	texture->SetImage<float>(0, width, height, TextureObject::FormatRGBA, TextureObject::InternalFormatRGBA, pixels);
-	texture->GenerateMipmap();
-
-	return texture;
 }
 
 std::shared_ptr<Texture2DObject> OceanApplication::Load2DTexture(const char* path, TextureObject::Format format, TextureObject::InternalFormat internalFormat, GLenum wrapMode, GLenum filter)

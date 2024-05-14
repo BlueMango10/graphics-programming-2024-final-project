@@ -47,7 +47,6 @@ private:
     void DrawOcean();
     void DrawSkybox();
 
-    std::shared_ptr<Texture2DObject> CreateDefaultTexture();
     std::shared_ptr<Texture2DObject> CreateHeightMap(unsigned int width, unsigned int height, glm::ivec2 coords);
     std::shared_ptr<Texture2DObject> Load2DTexture(const char* path, TextureObject::Format format, TextureObject::InternalFormat internalFormat, GLenum wrapMode, GLenum filter);
 
@@ -76,13 +75,11 @@ private:
     Mesh m_fullscreenMesh;
 
     // Materials
-    std::shared_ptr<Material> m_defaultMaterial;
     std::shared_ptr<Material> m_terrainMaterial;
     std::shared_ptr<Material> m_oceanMaterial;
     std::shared_ptr<Material> m_skyboxMaterial;
 
     // Textures
-    std::shared_ptr<Texture2DObject> m_defaultTexture;
     std::shared_ptr<Texture2DObject> m_terrainTexture;
     std::shared_ptr<Texture2DObject> m_oceanTexture;
     std::shared_ptr<Texture2DObject> m_foamTexture;
