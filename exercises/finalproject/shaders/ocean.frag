@@ -8,6 +8,8 @@ in vec2 TexSquish; // Basically how much the texture is squished due to wave mov
 
 out vec4 FragColor;
 
+uniform vec2 Resolution;
+
 // Water
 uniform float Time;
 uniform float DetailAnimSpeed;
@@ -25,6 +27,8 @@ uniform float FresnelBias;
 uniform float FresnelScale;
 uniform float FresnelPower;
 uniform vec4 Color;
+uniform sampler2D SceneColor;
+uniform sampler2D SceneDepth;
 
 // light
 uniform vec3 AmbientColor;
@@ -64,6 +68,7 @@ float fresnel(vec3 incident, vec3 normal, float bias, float scale, float power)
 
 void main()
 {
+	vec2 screenPosition = gl_FragCoord.xy / Resolution;
 	vec3 viewDirection = normalize(CameraPosition - WorldPosition);
 	vec3 normal = getCombinedAnimatedNormal();
 

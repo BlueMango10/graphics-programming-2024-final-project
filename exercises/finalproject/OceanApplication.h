@@ -11,6 +11,7 @@
 #include <vector>
 #include <chrono>
 #include <ituGL/texture/TextureCubemapObject.h>
+#include <ituGL/texture/FrameBufferObject.h>
 
 class Texture2DObject;
 
@@ -40,6 +41,8 @@ private:
     void RenderGUI();
 
     void DrawObject(const Mesh& mesh, Material& material, const glm::mat4& worldMatrix);
+    void DrawTerrain();
+    void DrawOcean();
     void DrawSkybox();
 
     std::shared_ptr<Texture2DObject> CreateDefaultTexture();
@@ -83,6 +86,11 @@ private:
     std::shared_ptr<Texture2DObject> m_foamTexture;
     std::shared_ptr<Texture2DObject> m_heightmapTexture[3];
     std::shared_ptr<TextureCubemapObject> m_skyboxTexture;
+
+    // Before Water Framebuffer
+    std::shared_ptr<FramebufferObject> m_fbBeforeWater;
+    std::shared_ptr<Texture2DObject> m_fbBeforeWaterDepth;
+    std::shared_ptr<Texture2DObject> m_fbBeforeWaterColor;
 
 
     // GUI and misc adjustable parameters
